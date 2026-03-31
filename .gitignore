@@ -1,0 +1,11 @@
+# اعتماديات
+node_modules/
+server/node_modules/
+
+# أسرار وبيئات — لا ترفعها أبدًا
+.env
+**/.env
+server/.env
+
+# سجلات
+*.log

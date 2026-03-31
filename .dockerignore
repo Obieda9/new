@@ -1,0 +1,11 @@
+node_modules
+server/node_modules
+.git
+.gitignore
+**/.env
+**/.env.*
+*.log
+.cursor
+**/*.md
+test-dashboard.html
+test-modal.html

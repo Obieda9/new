@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار المودال</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        /* Modal Base */
+        .modal {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex !important;
+        }
+
+        .modal-hidden {
+            display: none !important;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .modal-body {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-footer button {
+            flex: 1;
+        }
+
+        .btn-info {
+            background: #667eea;
+        }
+
+        .btn-info:hover {
+            background: #764ba2;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .console {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .console-log {
+            color: #333;
+            margin: 5px 0;
+        }
+
+        .info {
+            color: #0066cc;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>اختبار المودال</h1>
+        
+        <div class="button-group">
+            <button onclick="openTestModal('info')">فتح مودال المعلومات</button>
+            <button onclick="openTestModal('card')">فتح مودال البطاقة</button>
+            <button onclick="clearConsole()">مسح السجل</button>
+        </div>
+
+        <div class="console" id="console"></div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="testInfoModal" class="modal modal-hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>مودال المعلومات</h2>
+            </div>
+            <div class="modal-body">
+                <p>هذا هو مودال اختبار المعلومات. يجب أن تتمكن من رؤية هذه الرسالة.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-success" onclick="closeTestModal('info')">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Modal -->
+    <div id="testCardModal" class="modal modal-hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>مودال البطاقة</h2>
+            </div>
+            <div class="modal-body">
+                <p>هذا هو مودال اختبار البطاقة. يجب أن تتمكن من رؤية هذه الرسالة أيضاً.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-success" onclick="closeTestModal('card')">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const console = document.getElementById('console');
+            const div = document.createElement('div');
+            div.className = `console-log ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString('ar-EG')}] ${message}`;
+            console.appendChild(div);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '';
+        }
+
+        function openTestModal(type) {
+            log(`محاولة فتح مودال ${type === 'info' ? 'المعلومات' : 'البطاقة'}...`, 'info');
+            
+            const modalId = type === 'info' ? 'testInfoModal' : 'testCardModal';
+            const modal = document.getElementById(modalId);
+            
+            if (!modal) {
+                log(`خطأ: لم يتم العثور على العنصر ${modalId}`, 'error');
+                return;
+            }
+
+            log(`العنصر ${modalId} موجود`, 'success');
+            
+            // إزالة modal-hidden
+            modal.classList.remove('modal-hidden');
+            log(`تم إزالة class modal-hidden`, 'success');
+            
+            // إضافة active
+            modal.classList.add('active');
+            log(`تم إضافة class active`, 'success');
+            
+            // تعيين display
+            modal.style.setProperty('display', 'flex', 'important');
+            log(`تم تعيين style.display = flex (مع !important)`, 'success');
+            
+            // التحقق من الحالة النهائية
+            log(`الحالة النهائية:`, 'info');
+            log(`  - classList: ${modal.className}`, 'info');
+            log(`  - style.display: ${modal.style.display}`, 'info');
+            log(`  - جاي getComputedStyle: ${window.getComputedStyle(modal).display}`, 'info');
+        }
+
+        function closeTestModal(type) {
+            log(`محاولة إغلاق مودال ${type === 'info' ? 'المعلومات' : 'البطاقة'}...`, 'info');
+            
+            const modalId = type === 'info' ? 'testInfoModal' : 'testCardModal';
+            const modal = document.getElementById(modalId);
+            
+            modal.classList.add('modal-hidden');
+            modal.classList.remove('active');
+            modal.style.setProperty('display', 'none', 'important');
+            
+            log(`تم إغلاق المودال بنجاح`, 'success');
+        }
+
+        // Log on page load
+        window.addEventListener('load', () => {
+            log('تم تحميل الصفحة بنجاح', 'success');
+            log('انقر على أحد الأزرار أعلاه لاختبار المودالات', 'info');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+:root{
+  --top-bg: #d8ebff;
+  --cib-blue: #1e67a7;
+  --cib-orange: #f28c00;
+  --brown: #8c5a1a;
+  --card-border: #111;
+}
+
+*{ box-sizing: border-box; }
+
+html, body{ height: 100%; }
+
+body{
+  margin: 0;
+  font-family: Tahoma, Arial, sans-serif;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-header{
+  background: var(--top-bg);
+  padding: 18px 0 10px;
+}
+
+.top-header__inner{
+  display: flex;
+  justify-content: center;
+}
+
+.top-logo{
+  width: 150px;
+  height: auto;
+}
+
+.top-header__separator{
+  height: 3px;
+  background: linear-gradient(to right, var(--cib-orange), #ffb400);
+  margin-top: 8px;
+}
+
+.page{
+  flex: 1;
+  padding: 14px 10px 0;
+}
+
+.hero{
+  display: flex;
+  justify-content: center;
+  margin: 0 0 18px;
+}
+
+.hero-banner{
+  width: min(620px, 96vw);
+  background: var(--cib-blue);
+  border: 2px solid var(--card-border);
+  border-radius: 26px;
+  padding: 22px 18px 20px;
+  text-align: center;
+  color: #fff;
+}
+
+.hero-banner__title{
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 900;
+  text-shadow: 0 1px 0 #f2a65a;
+  margin-bottom: 10px;
+}
+
+.hero-banner__subtitle{
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 800;
+}
+
+.cards{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 0 8px 20px;
+}
+
+.card-link{
+  width: min(640px, 96vw);
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card-link,
+.card-link:visited,
+.card-link:hover,
+.card-link:active{
+  text-decoration: none;
+  color: inherit;
+}
+
+.card{
+  width: 100%;
+  background: #fff;
+  border: 2px solid var(--card-border);
+  border-radius: 20px;
+  padding: 18px 16px 18px;
+  text-align: center;
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
+  animation: watchCardEnter 0.55s ease both;
+}
+
+.card-link:nth-child(2) .card{ animation-delay: 0.08s; }
+.card-link:nth-child(3) .card{ animation-delay: 0.16s; }
+.card-link:nth-child(4) .card{ animation-delay: 0.24s; }
+.card-link:nth-child(5) .card{ animation-delay: 0.32s; }
+.card-link:nth-child(6) .card{ animation-delay: 0.4s; }
+
+.card-link:hover .card,
+.card-link:focus-visible .card{
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.15);
+}
+
+.card-link:focus-visible{
+  outline: none;
+}
+
+.card__img{
+  width: 160px;
+  height: auto;
+  object-fit: contain;
+  margin: 6px auto 12px;
+  display: block;
+}
+
+.card__title{
+  margin: 0 0 12px;
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--brown);
+}
+
+.card__desc{
+  margin: 0 auto;
+  max-width: 520px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--brown);
+  line-height: 1.5;
+}
+
+.footer{
+  background: var(--cib-blue);
+  padding: 18px 14px;
+  text-align: center;
+  position: relative;
+}
+
+.footer::before{
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background: linear-gradient(to right, var(--cib-orange), #ffb400);
+}
+
+.footer__text{
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.35;
+  position: relative;
+}
+
+@keyframes watchCardEnter{
+  from{
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 420px){
+  .top-logo{ width: 120px; }
+  .card__img{ width: 130px; }
+  .card__title{ font-size: 26px; }
+  .card__desc{ font-size: 18px; }
+  .footer__text{ font-size: 20px; }
+  .hero-banner{ padding: 18px 12px 16px; }
+}
+

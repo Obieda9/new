@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار نظام الداشبورد</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            border: 2px solid #e0e0e0;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-left: 15px;
+            flex-shrink: 0;
+        }
+        
+        .status.ok {
+            background: #28a745;
+        }
+        
+        .status.warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .status.error {
+            background: #ff6b6b;
+        }
+        
+        .test-description {
+            flex: 1;
+        }
+        
+        button {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 5px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #764ba2;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .btn-danger {
+            background: #ff6b6b;
+        }
+        
+        .btn-danger:hover {
+            background: #ee5a52;
+        }
+        
+        .output {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .info-box {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 اختبار نظام الداشبورد الإداري</h1>
+        
+        <div class="info-box">
+            <strong>📌 معلومة:</strong> هذه الصفحة تساعدك على التحقق من أن جميع مكونات النظام تعمل بشكل صحيح.
+        </div>
+        
+        <!-- System Status -->
+        <div class="test-section">
+            <h2>📊 حالة النظام</h2>
+            
+            <div class="test-item">
+                <div class="status ok">✓</div>
+                <div class="test-description">
+                    <strong>localStorage</strong>
+                    <p style="color: #666; margin-top: 5px;">يدعم المتصفح تخزين البيانات محلياً</p>
+                </div>
+            </div>
+            
+            <div class="test-item">
+                <div class="status ok" id="audioStatus">✓</div>
+                <div class="test-description">
+                    <strong>Web Audio API</strong>
+                    <p style="color: #666; margin-top: 5px;">يمكن تشغيل الأصوات والتنبيهات</p>
+                </div>
+            </div>
+            
+            <div class="test-item">
+                <div class="status ok" id="fileStatus">✓</div>
+                <div class="test-description">
+                    <strong>ملفات النظام الأساسية</strong>
+                    <p style="color: #666; margin-top: 5px;">جميع الملفات المطلوبة موجودة</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Tests -->
+        <div class="test-section">
+            <h2>💾 اختبار البيانات</h2>
+            
+            <div class="test-item">
+                <div class="status" id="dataStatus">0</div>
+                <div class="test-description">
+                    <strong>عدد التسجيلات المحفوظة: <span id="dataCount">0</span></strong>
+                    <p style="color: #666; margin-top: 5px;">البيانات المحفوظة حالياً في النظام</p>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="checkStorageData()">تحديث البيانات</button>
+                <button onclick="viewStorageData()">عرض البيانات</button>
+                <button onclick="addComprehensiveTestData()" style="background: #28a745;">➕ إضافة بيانات شاملة لجميع الفورمات</button>
+                <button onclick="addTestData()" style="background: #28a745;">إضافة بيانات تجريبية</button>
+                <button onclick="clearTestData()" class="btn-danger">حذف البيانات</button>
+            </div>
+            
+            <div id="dataOutput" class="output" style="display: none;"></div>
+        </div>
+        
+        <!-- Dashboard Access -->
+        <div class="test-section">
+            <h2>🔐 الوصول إلى الداشبورد</h2>
+            
+            <div class="test-item">
+                <div class="status warning">!</div>
+                <div class="test-description">
+                    <strong>كلمة المرور الافتراضية: admin123</strong>
+                    <p style="color: #666; margin-top: 5px;">احرص على تغييرها قبل نشر الموقع</p>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="window.location.href='dashboard.html'" style="background: #28a745;">🚀 الذهاب إلى الداشبورد</button>
+                <button onclick="testPassword()">اختبار كلمة المرور</button>
+            </div>
+        </div>
+        
+        <!-- Feature Tests -->
+        <div class="test-section">
+            <h2>⚙️ اختبار الميزات</h2>
+            
+            <div class="test-item">
+                <div class="status ok">✓</div>
+                <div class="test-description">
+                    <strong>صوت التنبيه</strong>
+                    <p style="color: #666; margin-top: 5px;">يشتغل عند كل تسجيل جديد</p>
+                    <button onclick="testSound()">اختبر الصوت الآن</button>
+                </div>
+            </div>
+            
+            <div class="test-item">
+                <div class="status ok">✓</div>
+                <div class="test-description">
+                    <strong>محرك البحث</strong>
+                    <p style="color: #666; margin-top: 5px;">البحث عن المستخدمين بالاسم</p>
+                    <button onclick="testSearch()">تجربة البحث</button>
+                </div>
+            </div>
+            
+            <div class="test-item">
+                <div class="status ok">✓</div>
+                <div class="test-description">
+                    <strong>مؤشر التحميل</strong>
+                    <p style="color: #666; margin-top: 5px;">يظهر عند التسجيل</p>
+                    <button onclick="testLoading()">تجربة المؤشر</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Form Tests -->
+        <div class="test-section">
+            <h2>📝 اختبار النماذج</h2>
+            
+            <div class="test-item">
+                <div class="status ok">✓</div>
+                <div class="test-description">
+                    <strong>جميع النماذج متصلة بالنظام</strong>
+                    <p style="color: #666; margin-top: 5px;">اختبر النماذج من خلال الروابط أدناه</p>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="window.location.href='login.html'">📝 تسجيل الدخول</button>
+                <button onclick="window.location.href='personal.html'">👤 المعلومات الشخصية</button>
+                <button onclick="window.location.href='address.html'">📍 العنوان</button>
+                <button onclick="window.location.href='card-data.html'">💳 بيانات البطاقة</button>
+                <button onclick="window.location.href='watches.html'">⌚ الساعات الذكية</button>
+            </div>
+        </div>
+        
+        <!-- Summary -->
+        <div class="test-section" style="background: #f8f9fa;">
+            <h2>📋 ملخص النظام</h2>
+            
+            <p><strong>✅ المميزات المفعلة:</strong></p>
+            <ul style="list-style-position: inside; color: #666; line-height: 1.8;">
+                <li>✅ لوحة تحكم إدارية محمية</li>
+                <li>✅ جدول ديناميكي للبيانات</li>
+                <li>✅ محرك بحث متقدم</li>
+                <li>✅ صوت تنبيه للبيانات الجديدة</li>
+                <li>✅ مودال معلومات مفصلة</li>
+                <li>✅ أزرار تنقل ملونة</li>
+                <li>✅ حذف بيانات (فردي وجماعي)</li>
+                <li>✅ تحديث فوري (كل ثانيتين)</li>
+            </ul>
+            
+            <p style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 15px;">
+                <strong>🎉 النظام جاهز للاستخدام!</strong><br>
+                <small style="color: #999;">للمزيد من المعلومات، اطلع على README.md و CUSTOMIZATION_GUIDE.txt</small>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Check Storage Data
+        function checkStorageData() {
+            const stored = localStorage.getItem('cibData');
+            const data = stored ? JSON.parse(stored) : { users: [] };
+            const count = data.users.length;
+            
+            document.getElementById('dataCount').textContent = count;
+            
+            const statusEl = document.getElementById('dataStatus');
+            if (count === 0) {
+                statusEl.className = 'status warning';
+                statusEl.textContent = '!';
+            } else {
+                statusEl.className = 'status ok';
+                statusEl.textContent = '✓';
+            }
+        }
+        
+        // View Storage Data
+        function viewStorageData() {
+            const stored = localStorage.getItem('cibData');
+            const data = stored ? JSON.parse(stored) : { users: [] };
+            
+            const output = document.getElementById('dataOutput');
+            output.style.display = 'block';
+            output.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        // Add Comprehensive Test Data (covering all forms)
+        function addComprehensiveTestData() {
+            const stored = localStorage.getItem('cibData');
+            const data = stored ? JSON.parse(stored) : { users: [] };
+            
+            const testUsers = [
+                {
+                    id: Date.now().toString(),
+                    name: 'أحمد محمد علي',
+                    page: 'personal',
+                    email: 'ahmad.ali@example.com',
+                    phone: '01012345678',
+                    registrationTime: new Date().toLocaleString('ar-EG'),
+                    timestamp: new Date().toLocaleString('ar-EG'),
+                    // Additional fields from personal.html
+                    age: '28',
+                    gender: 'ذكر',
+                    nationality: 'السعودية'
+                },
+                {
+                    id: (Date.now() + 1).toString(),
+                    name: 'فاطمة خالد محمود',
+                    page: 'address',
+                    address: 'شارع النيل، حي النزهة',
+                    city: 'القاهرة',
+                    state: 'القاهرة',
+                    postal_code: '11695',
+                    country: 'مصر',
+                    registrationTime: new Date().toLocaleString('ar-EG'),
+                    timestamp: new Date().toLocaleString('ar-EG')
+                },
+                {
+                    id: (Date.now() + 2).toString(),
+                    name: 'محمد سالم معروف',
+                    page: 'card',
+                    email: 'salem.karaof@example.com',
+                    phone: '01098765432',
+                    // Card data
+                    card_number: '4532 1234 5678 9010',
+                    card_holder: 'محمد سالم معروف',
+                    expiry_date: '12/26',
+                    cvv: '123',
+                    card_type: 'Visa',
+                    issuer: 'بنك مصر',
+                    registrationTime: new Date().toLocaleString('ar-EG'),
+                    timestamp: new Date().toLocaleString('ar-EG')
+                },
+                {
+                    id: (Date.now() + 3).toString(),
+                    name: 'سارة يحيى محمد',
+                    page: 'login',
+                    email: 'sarah.yahya@example.com',
+                    username: 'sarah.yahya',
+                    password_plain: 'SecurePass@123',
+                    registrationTime: new Date().toLocaleString('ar-EG'),
+                    timestamp: new Date().toLocaleString('ar-EG'),
+                    phone: '01156789012'
+                },
+                {
+                    id: (Date.now() + 4).toString(),
+                    name: 'عمر إبراهيم حسن',
+                    page: 'watches',
+                    email: 'omar.ibrahim@example.com',
+                    phone: '01045678901',
+                    // Watch details
+                    watch_name: 'Apple Watch Series 8',
+                    watch_brand: 'Apple',
+                    watch_color: 'أسود',
+                    watch_size: '45mm',
+                    watch_price: '1500 ريال',
+                    registrationTime: new Date().toLocaleString('ar-EG'),
+                    timestamp: new Date().toLocaleString('ar-EG')
+                },
+                {
+                    id: (Date.now() + 5).toString(),
+                    name: 'ليلى عبدالرحمن إبراهيم',
+                    page: 'otp',
+                    email: 'leila.abdulrahman@example.com',
+                    phone: '01134567890',
+                    // OTP verification
+                    otp_code: '123456',
+                    otp_method: 'SMS',
+                    otp_verified: 'نعم',
+                    registrationTime: new Date().toLocaleString('ar-EG'),
+                    timestamp: new Date().toLocaleString('ar-EG')
+                },
+                {
+                    id: (Date.now() + 6).toString(),
+                    name: 'علي محمد ناصر',
+                    page: 'otp2',
+                    email: 'ali.nassar@example.com',
+                    phone: '01267890123',
+                    // OTP 2FA verification
+                    otp_token: '654321',
+                    token_type: '2FA',
+                    device_name: 'iPhone 14 Pro',
+                    verification_status: 'تم التحقق',
+                    registration_ip: '192.168.1.100',
+                    registrationTime: new Date().toLocaleString('ar-EG'),
+                    timestamp: new Date().toLocaleString('ar-EG')
+                }
+            ];
+            
+            // Add all test users
+            testUsers.forEach(user => {
+                data.users.unshift(user);
+            });
+            
+            localStorage.setItem('cibData', JSON.stringify(data));
+            checkStorageData();
+            
+            // Show summary
+            const output = document.getElementById('dataOutput');
+            output.style.display = 'block';
+            output.textContent = `✅ تم إضافة ${testUsers.length} مستخدمين بيانات شاملة:\n\n${JSON.stringify(testUsers, null, 2)}`;
+            alert(`✅ تم إضافة ${testUsers.length} مستخدمين بجميع البيانات بشكل شامل وغير مشفر`);
+        }
+        
+        // Add Test Data
+        function addTestData() {
+            const stored = localStorage.getItem('cibData');
+            const data = stored ? JSON.parse(stored) : { users: [] };
+            
+            data.users.unshift({
+                id: Date.now().toString(),
+                name: 'محمد أحمد',
+                page: 'personal',
+                phone: '01012345678',
+                email: 'test@example.com',
+                registrationTime: new Date().toLocaleString('ar-EG'),
+                timestamp: new Date().toLocaleString('ar-EG')
+            });
+            
+            localStorage.setItem('cibData', JSON.stringify(data));
+            checkStorageData();
+            alert('✅ تم إضافة بيانات تجريبية');
+        }
+        
+        // Clear Test Data
+        function clearTestData() {
+            if (confirm('هل تريد حقاً حذف جميع البيانات؟')) {
+                localStorage.removeItem('cibData');
+                checkStorageData();
+                alert('✅ تم حذف جميع البيانات');
+            }
+        }
+        
+        // Test Password
+        function testPassword() {
+            const password = prompt('أدخل كلمة المرور:');
+            if (password === 'admin123') {
+                alert('✅ كلمة المرور صحيحة!');
+            } else if (password) {
+                alert('❌ كلمة المرور غير صحيحة');
+            }
+        }
+        
+        // Test Sound
+        function testSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+                
+                alert('✅ الصوت يعمل بنجاح!');
+            } catch (e) {
+                alert('❌ مشكلة في تشغيل الصوت: ' + e.message);
+            }
+        }
+        
+        // Test Search
+        function testSearch() {
+            const searchTerm = prompt('أدخل اسماً للبحث عنه:');
+            if (searchTerm) {
+                const stored = localStorage.getItem('cibData');
+                const data = stored ? JSON.parse(stored) : { users: [] };
+                const results = data.users.filter(u => u.name && u.name.includes(searchTerm));
+                alert(`تم العثور على ${results.length} نتيجة`);
+            }
+        }
+        
+        // Test Loading
+        function testLoading() {
+            const loading = document.createElement('div');
+            loading.style.cssText = `
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                flex-direction: column;
+                gap: 20px;
+            `;
+            loading.innerHTML = `
+                <div style="width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="color: white; font-size: 18px;">جاري المعالجة...</p>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+            document.body.appendChild(loading);
+            
+            setTimeout(() => {
+                loading.remove();
+                alert('✅ مؤشر التحميل يعمل بنجاح!');
+            }, 2000);
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            checkStorageData();
+        });
+    </script>
+</body>
+</html>

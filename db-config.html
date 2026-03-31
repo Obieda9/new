@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>إعداد قاعدة البيانات</title>
+  <style>
+    body { font-family: Segoe UI, Tahoma, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; margin: 0; padding: 20px; }
+    .box { max-width: 760px; margin: 0 auto; background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18); }
+    h1 { margin: 0 0 12px; font-size: 24px; color: #222; }
+    .note { color: #555; margin-bottom: 16px; }
+    .row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    input, textarea { border: 2px solid #e1e5ee; border-radius: 8px; padding: 10px; font-size: 14px; }
+    textarea { min-height: 94px; direction: ltr; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    button { border: 0; border-radius: 8px; padding: 10px 14px; cursor: pointer; color: #fff; background: #667eea; font-weight: 700; }
+    button.secondary { background: #7a8494; }
+    .hidden { display: none; }
+    .status { margin-top: 10px; font-size: 14px; color: #333; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>إعداد قاعدة البيانات</h1>
+    <p class="note">صفحة محمية: أدخل كلمة مرور الإدارة ثم غيّر `DEFAULT_APP_KEY` و `MONGODB_URI`.</p>
+
+    <div id="loginSection" class="row">
+      <label for="adminPass">كلمة مرور الإدارة (ADMIN_CONFIG_PASSWORD)</label>
+      <input id="adminPass" type="password" placeholder="أدخل كلمة المرور" />
+      <div class="actions">
+        <button id="unlockBtn" type="button">دخول</button>
+      </div>
+    </div>
+
+    <div id="configSection" class="hidden">
+      <div class="row">
+        <label for="defaultAppKey">DEFAULT_APP_KEY</label>
+        <input id="defaultAppKey" type="text" />
+      </div>
+      <div class="row">
+        <label for="mongodbUri">MONGODB_URI</label>
+        <textarea id="mongodbUri"></textarea>
+      </div>
+      <div class="actions">
+        <button id="saveBtn" type="button">حفظ وتبديل النسخة</button>
+        <button id="reloadBtn" class="secondary" type="button">إعادة تحميل الحالي</button>
+      </div>
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
+
+  <script src="api-config.js"></script>
+  <script>
+    (function () {
+      var password = '';
+      var base = (window.API_BASE_URL || '').replace(/\/$/, '');
+      var statusEl = document.getElementById('status');
+      var loginSection = document.getElementById('loginSection');
+      var configSection = document.getElementById('configSection');
+      var keyInput = document.getElementById('defaultAppKey');
+      var uriInput = document.getElementById('mongodbUri');
+
+      function setStatus(msg, isErr) {
+        statusEl.textContent = msg || '';
+        statusEl.style.color = isErr ? '#c53030' : '#333';
+      }
+
+      async function loadConfig() {
+        var res = await fetch(base + '/api/admin/db-config', {
+          headers: { 'x-admin-password': password }
+        });
+        if (!res.ok) {
+          var text = await res.text();
+          throw new Error(text || 'فشل قراءة الإعدادات');
+        }
+        var data = await res.json();
+        keyInput.value = data.defaultAppKey || '';
+        uriInput.value = data.mongodbUri || '';
+        setStatus('تم تحميل الإعدادات الحالية بنجاح.');
+      }
+
+      document.getElementById('unlockBtn').addEventListener('click', async function () {
+        password = String(document.getElementById('adminPass').value || '').trim();
+        if (!password) {
+          setStatus('أدخل كلمة المرور أولاً', true);
+          return;
+        }
+        try {
+          await loadConfig();
+          loginSection.classList.add('hidden');
+          configSection.classList.remove('hidden');
+        } catch (err) {
+          setStatus('فشل الدخول: ' + err.message, true);
+        }
+      });
+
+      document.getElementById('reloadBtn').addEventListener('click', async function () {
+        try {
+          await loadConfig();
+        } catch (err) {
+          setStatus('فشل إعادة التحميل: ' + err.message, true);
+        }
+      });
+
+      document.getElementById('saveBtn').addEventListener('click', async function () {
+        var defaultAppKey = String(keyInput.value || '').trim();
+        var mongodbUri = String(uriInput.value || '').trim();
+        if (!defaultAppKey || !mongodbUri) {
+          setStatus('الرجاء تعبئة DEFAULT_APP_KEY و MONGODB_URI', true);
+          return;
+        }
+        if (!confirm('هل أنت متأكد؟ سيتم التبديل فورًا إلى نسخة قاعدة البيانات الجديدة.')) {
+          return;
+        }
+        try {
+          var res = await fetch(base + '/api/admin/db-config', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-password': password
+            },
+            body: JSON.stringify({
+              defaultAppKey: defaultAppKey,
+              mongodbUri: mongodbUri
+            })
+          });
+          if (!res.ok) {
+            var text = await res.text();
+            throw new Error(text || 'فشل الحفظ');
+          }
+          await loadConfig();
+          setStatus('تم الحفظ والتبديل بنجاح. النسخة النشطة الآن: ' + defaultAppKey);
+        } catch (err) {
+          setStatus('فشل التحديث: ' + err.message, true);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

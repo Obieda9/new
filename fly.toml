@@ -1,0 +1,22 @@
+# إعدادات Fly لنشر من جذر المشروع (Dockerfile في الجذر يخدم الواجهة + server/)
+# نُحدّث إذا غيّرت اسم التطبيق في Fly
+
+app = 'server-wild-feather-5169'
+primary_region = 'cdg'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024

