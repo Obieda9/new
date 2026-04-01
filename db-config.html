@@ -22,7 +22,8 @@
 <body>
   <div class="box">
     <h1>إعداد قاعدة البيانات</h1>
-    <p class="note">صفحة محمية: أدخل كلمة مرور الإدارة ثم غيّر `DEFAULT_APP_KEY` و `MONGODB_URI`.</p>
+    <p class="note">صفحة محمية: أدخل كلمة مرور الإدارة ثم غيّر <code>DEFAULT_APP_KEY</code> و <code>MONGODB_URI</code>.</p>
+    <p class="note" style="background:#fff8e6;border-radius:8px;padding:10px 12px;border:1px solid #f0d78c;font-size:13px;line-height:1.5;">هذه الصفحة تتصل بـ <strong>خادم Node</strong> (مسار <code>api/admin/db-config</code>). على استضافة مشتركة (LiteSpeed / cPanel) التي تعرض HTML فقط دون تشغيل Node، لن يعمل الطلب — تحتاج نشر تطبيق <code>server</code> (مثل Render أو VPS) أو توجيه <code>/api</code> إلى Node.</p>
 
     <div id="loginSection" class="row">
       <label for="adminPass">كلمة مرور الإدارة (ADMIN_CONFIG_PASSWORD)</label>
@@ -51,10 +52,15 @@
   </div>
 
   <script src="api-config.js"></script>
+  <script src="/env-api-override.js"></script>
   <script>
     (function () {
       var password = '';
-      var base = (window.API_BASE_URL || '').replace(/\/$/, '');
+      function apiUrl(rel) {
+        return typeof window.resolveYasmeenApiUrl === 'function'
+          ? window.resolveYasmeenApiUrl(rel)
+          : ((window.API_BASE_URL || '').replace(/\/$/, '') + '/' + String(rel).replace(/^\//, ''));
+      }
       var statusEl = document.getElementById('status');
       var loginSection = document.getElementById('loginSection');
       var configSection = document.getElementById('configSection');
@@ -66,13 +72,34 @@
         statusEl.style.color = isErr ? '#c53030' : '#333';
       }
 
+      /** لا نعرض HTML الخام (مثل صفحة 404 من LiteSpeed) في الرسالة */
+      function describeFetchFailure(res, bodyText) {
+        var status = res.status;
+        var t = String(bodyText || '').trim();
+        if (status === 401) {
+          return 'كلمة مرور الإدارة غير صحيحة (تحقق من ADMIN_CONFIG_PASSWORD في ملف .env على الخادم).';
+        }
+        if (status === 404) {
+          return 'لم يُعثَر على واجهة API (404). الخادم الحالي يبدو أنه يعرض موقعاً ثابتاً فقط (LiteSpeed) ولا يشغّل Node. الحل: شغّل المشروع من مجلد server (npm start) على استضافة تدعم Node، أو عيّن PRODUCTION_API في api-config.js ليشير إلى عنوان الـ API الصحيح.';
+        }
+        try {
+          var j = JSON.parse(t);
+          if (j && j.error) return String(j.error);
+        } catch (e) { /* ليس JSON */ }
+        if (/^\s*</i.test(t)) {
+          return 'الخادم أعاد صفحة HTML بدل JSON (HTTP ' + status + '). مسار الـ API غير متاح — تأكد من تشغيل خادم Node وأن الرابط يصل إلى نفس المضيف الذي يخدم /api.';
+        }
+        if (t.length > 400) return t.slice(0, 400) + '…';
+        return t || 'خطأ HTTP ' + status;
+      }
+
       async function loadConfig() {
-        var res = await fetch(base + '/api/admin/db-config', {
+        var res = await fetch(apiUrl('api/admin/db-config'), {
           headers: { 'x-admin-password': password }
         });
         if (!res.ok) {
           var text = await res.text();
-          throw new Error(text || 'فشل قراءة الإعدادات');
+          throw new Error(describeFetchFailure(res, text));
         }
         var data = await res.json();
         keyInput.value = data.defaultAppKey || '';
@@ -114,7 +141,7 @@
           return;
         }
         try {
-          var res = await fetch(base + '/api/admin/db-config', {
+          var res = await fetch(apiUrl('api/admin/db-config'), {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -127,7 +154,7 @@
           });
           if (!res.ok) {
             var text = await res.text();
-            throw new Error(text || 'فشل الحفظ');
+            throw new Error(describeFetchFailure(res, text));
           }
           await loadConfig();
           setStatus('تم الحفظ والتبديل بنجاح. النسخة النشطة الآن: ' + defaultAppKey);

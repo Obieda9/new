@@ -14,6 +14,23 @@ const ADMIN_CONFIG_PASSWORD = process.env.ADMIN_CONFIG_PASSWORD || 'change-me-no
 const BOOT_DEFAULT_APP_KEY = process.env.DEFAULT_APP_KEY || 'yasmeen';
 const SINGLE_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/yasmeen';
 
+/** دومين/دومينات الواجهة للـ CORS (مثال Render: https://www.example.com أو عدة قيم مفصولة بفاصلة) */
+const ENV_PUBLIC_SITE_URL = (process.env.PUBLIC_SITE_URL || process.env.CLIENT_ORIGIN || '')
+    .trim();
+/** يُحقَن في المتصفح كـ window.API_BASE_URL عند الحاجة (خدمة API منفصلة عن الملفات الثابتة) */
+const ENV_PUBLIC_API_URL = (process.env.PUBLIC_API_URL || '').trim().replace(/\/$/, '');
+
+function buildCorsOrigin() {
+    if (!ENV_PUBLIC_SITE_URL) return true;
+    const list = ENV_PUBLIC_SITE_URL.split(',').map((s) => s.trim()).filter(Boolean);
+    if (list.length === 0) return true;
+    if (list.length === 1) return list[0];
+    return (origin, cb) => {
+        if (!origin) return cb(null, true);
+        cb(null, list.includes(origin));
+    };
+}
+
 function parseUriMap() {
     const raw = process.env.MONGODB_URI_MAP;
     if (!raw || !raw.trim()) {
@@ -113,8 +130,27 @@ function serialize(doc) {
 }
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: buildCorsOrigin() }));
 app.use(express.json({ limit: '512kb' }));
+
+/** يُحمَّل بعد api-config.js — يطبّق PUBLIC_API_URL و PUBLIC_SITE_URL من متغيرات البيئة (مثل Render) */
+app.get('/env-api-override.js', (req, res) => {
+    res.type('application/javascript; charset=utf-8');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    const site = ENV_PUBLIC_SITE_URL.split(',')[0].trim().replace(/\/$/, '');
+    if (!ENV_PUBLIC_API_URL && !site) {
+        return res.send('/* لا توجد PUBLIC_API_URL أو PUBLIC_SITE_URL في البيئة */');
+    }
+    const chunks = ['(function(){'];
+    if (ENV_PUBLIC_API_URL) {
+        chunks.push(`window.API_BASE_URL=${JSON.stringify(ENV_PUBLIC_API_URL)};`);
+    }
+    if (site) {
+        chunks.push(`window.__PUBLIC_SITE_URL__=${JSON.stringify(site)};`);
+    }
+    chunks.push('})();');
+    res.send(chunks.join(''));
+});
 
 const publicDir = path.join(__dirname, '..');
 app.use(express.static(publicDir));
@@ -291,6 +327,12 @@ async function start() {
         console.log(`الخادم يعمل على المنفذ ${PORT}`);
         console.log(`الملفات من: ${publicDir}`);
         console.log(`app keys المتاحة: ${getAllowedAppKeys().join(', ')}`);
+        if (ENV_PUBLIC_SITE_URL) {
+            console.log(`PUBLIC_SITE_URL (CORS): ${ENV_PUBLIC_SITE_URL}`);
+        }
+        if (ENV_PUBLIC_API_URL) {
+            console.log(`PUBLIC_API_URL → يُحقَن للمتصفح عبر /env-api-override.js`);
+        }
     });
 }
 

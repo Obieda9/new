@@ -13,6 +13,14 @@ class ApiDatabase {
             : '';
     }
 
+    apiUrl(relPath) {
+        if (typeof window !== 'undefined' && typeof window.resolveYasmeenApiUrl === 'function') {
+            return window.resolveYasmeenApiUrl(relPath);
+        }
+        const r = String(relPath || '').replace(/^\//, '');
+        return `${this.apiBase()}/${r}`;
+    }
+
     headers(extra) {
         if (typeof getApiHeaders === 'function') {
             return getApiHeaders(extra);
@@ -21,7 +29,7 @@ class ApiDatabase {
     }
 
     async refresh() {
-        const res = await fetch(this.apiBase() + '/api/submissions', {
+        const res = await fetch(this.apiUrl('api/submissions'), {
             headers: this.headers()
         });
         if (!res.ok) {
@@ -42,7 +50,7 @@ class ApiDatabase {
             registrationTime: new Date().toLocaleString('ar-EG')
         };
         delete body.id;
-        const res = await fetch(this.apiBase() + '/api/submissions', {
+        const res = await fetch(this.apiUrl('api/submissions'), {
             method: 'POST',
             headers: this.headers({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(body)
@@ -57,7 +65,9 @@ class ApiDatabase {
 
     async deleteUser(userId) {
         const res = await fetch(
-            this.apiBase() + '/api/submissions/' + encodeURIComponent(String(userId)),
+            this.apiUrl(
+                'api/submissions/' + encodeURIComponent(String(userId))
+            ),
             { method: 'DELETE', headers: this.headers() }
         );
         if (!res.ok) {
@@ -67,7 +77,7 @@ class ApiDatabase {
     }
 
     async deleteAllUsers() {
-        const res = await fetch(this.apiBase() + '/api/submissions', {
+        const res = await fetch(this.apiUrl('api/submissions'), {
             method: 'DELETE',
             headers: this.headers()
         });
@@ -812,7 +822,7 @@ function clearSession() {
 // Password Check
 function checkPassword() {
     const password = document.getElementById('adminPassword').value;
-    const adminPassword = 'admin123'; // كلمة المرور الافتراضية
+    const adminPassword = 'qqwe@22'; // كلمة المرور الافتراضية
 
     if (password === adminPassword) {
         isLoggedIn = true;
@@ -877,7 +887,10 @@ async function loadDashboard() {
         await db.refresh();
     } catch (e) {
         console.error(e);
-        db.showNotification('تعذر جلب البيانات — تأكد أن الخادم يعمل (npm start) وMongoDB متصل', 'error');
+        db.showNotification(
+            'تعذر جلب البيانات. تحقق من: (1) تشغيل خادم Node من مجلد server عبر npm start (2) اتصال MongoDB في ملف .env (3) إن كان الـ API على عنوان آخر فعيّن PRODUCTION_API في api-config.js',
+            'error'
+        );
     }
     renderDashboardTables();
     if (dashboardRefreshIntervalId) {
@@ -1366,17 +1379,14 @@ async function navigateTo(page) {
     }
 
     try {
-        const res = await fetch(
-            db.apiBase() + '/api/session/nav',
-            {
-                method: 'POST',
-                headers: db.headers({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({
-                    client_session_id: String(sid).trim(),
-                    redirectUrl: target
-                })
-            }
-        );
+        const res = await fetch(db.apiUrl('api/session/nav'), {
+            method: 'POST',
+            headers: db.headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+                client_session_id: String(sid).trim(),
+                redirectUrl: target
+            })
+        });
         if (!res.ok) {
             const t = await res.text();
             throw new Error(t || 'فشل الطلب');
