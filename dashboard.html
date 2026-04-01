@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم الإدارية - CIB</title>
-    <link rel="stylesheet" href="dashboard.css">
+    <!-- غيّر ?v= عند تحديث CSS لإجبار المتصفح على التحميل (تجاوز الذاكرة المؤقتة) -->
+    <link rel="stylesheet" href="dashboard.css?v=20260331f">
 </head>
 <body>
     <!-- Login Modal -->
@@ -43,7 +44,7 @@
             
             <div class="bulk-actions">
                 <button onclick="deleteAllUsers()" class="btn-danger">حذف الكل</button>
-                <button onclick="refreshData()" class="btn-secondary">تحديث</button>
+                <button onclick="refreshData()" class="btn-secondary">تحديث الصفحة</button>
                 <button onclick="window.open('db-config.html', '_blank')" class="btn-secondary">إعداد قاعدة البيانات</button>
             </div>
         </div>
@@ -122,6 +123,6 @@
 
     <script src="api-config.js"></script>
     <script src="api-client.js"></script>
-    <script src="dashboard.js"></script>
+    <script src="dashboard.js?v=20260331f"></script>
 </body>
 </html>

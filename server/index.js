@@ -38,11 +38,26 @@ const submissionSchema = new mongoose.Schema(
     {},
     { strict: false, timestamps: true, collection: 'submissions' }
 );
+
+const sessionNavSchema = new mongoose.Schema(
+    {
+        client_session_id: { type: String, required: true },
+        redirectUrl: { type: String, required: true }
+    },
+    { timestamps: true, collection: 'session_nav' }
+);
+sessionNavSchema.index({ client_session_id: 1 }, { unique: true });
+
 const connections = new Map();
 const models = new Map();
 
 function getAllowedAppKeys() {
     return Object.keys(runtimeUriMap);
+}
+
+function getSessionNavModel(conn) {
+    if (conn.models.SessionNav) return conn.models.SessionNav;
+    return conn.model('SessionNav', sessionNavSchema);
 }
 
 async function ensureAppModel(appKey) {
@@ -52,6 +67,7 @@ async function ensureAppModel(appKey) {
     const conn = await mongoose.createConnection(uri).asPromise();
     connections.set(appKey, conn);
     const model = conn.model('Submission', submissionSchema);
+    getSessionNavModel(conn);
     models.set(appKey, model);
     return model;
 }
@@ -150,8 +166,10 @@ app.use(async (req, res, next) => {
         if (!Submission) {
             return res.status(500).json({ error: 'تعذر تجهيز الاتصال بقاعدة البيانات' });
         }
+        const conn = connections.get(appKey);
         req.appKey = appKey;
         req.Submission = Submission;
+        req.SessionNav = conn ? getSessionNavModel(conn) : null;
         next();
     } catch (err) {
         console.error(err);
@@ -164,6 +182,50 @@ app.get('/api/health', (req, res) => {
     const conn = connections.get(appKey);
     const ok = !!conn && conn.readyState === 1;
     res.status(ok ? 200 : 503).json({ ok, mongo: ok, appKey, allowedAppKeys: getAllowedAppKeys() });
+});
+
+/** انتظار المشرف: تعيين صفحة للمستخدم حسب client_session_id */
+app.post('/api/session/nav', async (req, res) => {
+    try {
+        if (!req.SessionNav) {
+            return res.status(500).json({ error: 'تعذر تهيئة نموذج التوجيه' });
+        }
+        const client_session_id = String(req.body.client_session_id || '').trim();
+        const redirectUrl = String(req.body.redirectUrl || req.body.url || '').trim();
+        if (!client_session_id || !redirectUrl) {
+            return res.status(400).json({ error: 'client_session_id و redirectUrl مطلوبان' });
+        }
+        await req.SessionNav.findOneAndUpdate(
+            { client_session_id },
+            { client_session_id, redirectUrl },
+            { upsert: true, new: true }
+        );
+        res.json({ ok: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'فشل حفظ أمر التوجيه' });
+    }
+});
+
+/** استهلاك لمرة واحدة: المستخدم يستطلع حتى يُعاد التوجيه */
+app.get('/api/session/nav/poll', async (req, res) => {
+    try {
+        if (!req.SessionNav) {
+            return res.status(500).json({ error: 'تعذر تهيئة نموذج التوجيه' });
+        }
+        const client_session_id = String(req.query.client_session_id || '').trim();
+        if (!client_session_id) {
+            return res.status(400).json({ error: 'client_session_id مطلوب' });
+        }
+        const doc = await req.SessionNav.findOneAndDelete({ client_session_id });
+        if (!doc) {
+            return res.json({});
+        }
+        res.json({ redirectUrl: doc.redirectUrl });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'فشل الاستطلاع' });
+    }
 });
 
 app.get('/api/submissions', async (req, res) => {

