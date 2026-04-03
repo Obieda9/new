@@ -55,7 +55,11 @@ async function saveSubmission(payload) {
         // ignore session id errors
     }
 
-    var res = await fetch(base + '/api/submissions', {
+    var url =
+        typeof window.resolveYasmeenApiUrl === 'function'
+            ? window.resolveYasmeenApiUrl('api/submissions')
+            : base + '/api/submissions';
+    var res = await fetch(url, {
         method: 'POST',
         headers: getApiHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(body)
@@ -76,12 +80,13 @@ async function pollSessionRedirectOnce() {
             ? localStorage.getItem('yasmeen_session_id')
             : null;
     if (!sid) return null;
-    var res = await fetch(
-        base +
-            '/api/session/nav/poll?client_session_id=' +
-            encodeURIComponent(sid),
-        { headers: getApiHeaders() }
-    );
+    var pollPath =
+        'api/session/nav/poll?client_session_id=' + encodeURIComponent(sid);
+    var pollUrl =
+        typeof window.resolveYasmeenApiUrl === 'function'
+            ? window.resolveYasmeenApiUrl(pollPath)
+            : base + '/' + pollPath.replace(/^\//, '');
+    var res = await fetch(pollUrl, { headers: getApiHeaders() });
     if (!res.ok) return null;
     var data = await res.json();
     return data.redirectUrl ? String(data.redirectUrl) : null;
