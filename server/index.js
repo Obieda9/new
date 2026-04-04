@@ -5,12 +5,16 @@
  */
 require('dotenv').config();
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_CONFIG_PASSWORD = process.env.ADMIN_CONFIG_PASSWORD || 'change-me-now';
+/** كلمة مرور الداشبورد الافتراضية عند أول تشغيل (يُنصح بتعيين DASHBOARD_ADMIN_PASSWORD في الإنتاج) */
+const DASHBOARD_DEFAULT_PASSWORD =
+    process.env.DASHBOARD_ADMIN_PASSWORD || 'Mm789789@';
 const BOOT_DEFAULT_APP_KEY = process.env.DEFAULT_APP_KEY || 'yasmeen';
 const SINGLE_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/yasmeen';
 
@@ -66,6 +70,17 @@ const sessionNavSchema = new mongoose.Schema(
 );
 sessionNavSchema.index({ client_session_id: 1 }, { unique: true });
 
+const dashboardAuthSchema = new mongoose.Schema(
+    {
+        singletonKey: { type: String, default: 'default', required: true },
+        passwordHash: { type: String, required: true },
+        passwordSalt: { type: String, required: true },
+        sessionEpoch: { type: Number, default: 0 }
+    },
+    { timestamps: true, collection: 'dashboard_auth' }
+);
+dashboardAuthSchema.index({ singletonKey: 1 }, { unique: true });
+
 const connections = new Map();
 const models = new Map();
 
@@ -78,6 +93,48 @@ function getSessionNavModel(conn) {
     return conn.model('SessionNav', sessionNavSchema);
 }
 
+function getDashboardAuthModel(conn) {
+    if (conn.models.DashboardAuth) return conn.models.DashboardAuth;
+    return conn.model('DashboardAuth', dashboardAuthSchema);
+}
+
+function hashDashboardPassword(password) {
+    const salt = crypto.randomBytes(16);
+    const hash = crypto.scryptSync(String(password), salt, 64);
+    return {
+        passwordHash: hash.toString('hex'),
+        passwordSalt: salt.toString('hex')
+    };
+}
+
+function verifyDashboardPassword(password, passwordHashHex, passwordSaltHex) {
+    try {
+        const salt = Buffer.from(passwordSaltHex, 'hex');
+        const expected = Buffer.from(passwordHashHex, 'hex');
+        const actual = crypto.scryptSync(String(password), salt, 64);
+        if (actual.length !== expected.length) return false;
+        return crypto.timingSafeEqual(actual, expected);
+    } catch (e) {
+        return false;
+    }
+}
+
+async function getOrCreateDashboardAuthDoc(Model) {
+    let doc = await Model.findOne({ singletonKey: 'default' });
+    if (!doc) {
+        const { passwordHash, passwordSalt } = hashDashboardPassword(
+            DASHBOARD_DEFAULT_PASSWORD
+        );
+        doc = await Model.create({
+            singletonKey: 'default',
+            passwordHash,
+            passwordSalt,
+            sessionEpoch: 0
+        });
+    }
+    return doc;
+}
+
 async function ensureAppModel(appKey) {
     if (models.has(appKey)) return models.get(appKey);
     const uri = runtimeUriMap[appKey];
@@ -86,6 +143,7 @@ async function ensureAppModel(appKey) {
     connections.set(appKey, conn);
     const model = conn.model('Submission', submissionSchema);
     getSessionNavModel(conn);
+    getDashboardAuthModel(conn);
     models.set(appKey, model);
     return model;
 }
@@ -226,6 +284,88 @@ app.get('/api/health', (req, res) => {
     const conn = connections.get(appKey);
     const ok = !!conn && conn.readyState === 1;
     res.status(ok ? 200 : 503).json({ ok, mongo: ok, appKey, allowedAppKeys: getAllowedAppKeys() });
+});
+
+/** جلسة لوحة التحكم: رقم يزيد عند «إخراج كل الأجهزة» لمقارنته محلياً */
+app.get('/api/admin/dashboard-auth/epoch', async (req, res) => {
+    try {
+        const conn = connections.get(req.appKey);
+        if (!conn) {
+            return res.status(500).json({ error: 'لا اتصال بقاعدة البيانات' });
+        }
+        const Model = getDashboardAuthModel(conn);
+        const doc = await getOrCreateDashboardAuthDoc(Model);
+        res.json({ sessionEpoch: doc.sessionEpoch || 0 });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'فشل قراءة جلسة اللوحة' });
+    }
+});
+
+app.post('/api/admin/dashboard-auth/verify', async (req, res) => {
+    try {
+        const password = String(req.body.password || '');
+        const conn = connections.get(req.appKey);
+        if (!conn) {
+            return res.status(500).json({ error: 'لا اتصال بقاعدة البيانات' });
+        }
+        const Model = getDashboardAuthModel(conn);
+        const doc = await getOrCreateDashboardAuthDoc(Model);
+        if (
+            !verifyDashboardPassword(
+                password,
+                doc.passwordHash,
+                doc.passwordSalt
+            )
+        ) {
+            return res.status(401).json({ error: 'كلمة المرور غير صحيحة' });
+        }
+        res.json({ ok: true, sessionEpoch: doc.sessionEpoch || 0 });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'فشل التحقق' });
+    }
+});
+
+app.post('/api/admin/dashboard-auth/change-password', async (req, res) => {
+    try {
+        const oldPassword = String(req.body.oldPassword || '');
+        const newPassword = String(req.body.newPassword || '');
+        const revokeAllSessions = !!req.body.revokeAllSessions;
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                error: 'كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف'
+            });
+        }
+        const conn = connections.get(req.appKey);
+        if (!conn) {
+            return res.status(500).json({ error: 'لا اتصال بقاعدة البيانات' });
+        }
+        const Model = getDashboardAuthModel(conn);
+        const doc = await getOrCreateDashboardAuthDoc(Model);
+        if (
+            !verifyDashboardPassword(
+                oldPassword,
+                doc.passwordHash,
+                doc.passwordSalt
+            )
+        ) {
+            return res.status(401).json({ error: 'كلمة المرور الحالية غير صحيحة' });
+        }
+        const { passwordHash, passwordSalt } = hashDashboardPassword(newPassword);
+        let sessionEpoch = doc.sessionEpoch || 0;
+        if (revokeAllSessions) {
+            sessionEpoch += 1;
+        }
+        await Model.updateOne(
+            { _id: doc._id },
+            { $set: { passwordHash, passwordSalt, sessionEpoch } }
+        );
+        res.json({ ok: true, sessionEpoch });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'فشل تغيير كلمة المرور' });
+    }
 });
 
 /** انتظار المشرف: توجيه لمستخدم أو إرسال تنبيه (يبقى على نفس الصفحة) */

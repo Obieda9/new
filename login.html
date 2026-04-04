@@ -47,9 +47,9 @@
             name="password"
             id="loginPassword"
             required
-            minlength="12"
+            maxlength="12"
             autocomplete="current-password"
-            pattern="[ -~]{12,}"
+            pattern="[ -~]{1,12}"
             placeholder="ادخل كلمة المرور"
           />
         </div>
@@ -92,8 +92,8 @@
           if (passEl) {
             var p = passEl.value;
             if (!p) passEl.setCustomValidity('');
-            else if (p.length < 12)
-              passEl.setCustomValidity('كلمة المرور يجب أن لا تقل عن 12 خانة.');
+            else if (p.length > 12)
+              passEl.setCustomValidity('كلمة المرور يجب ألا تتجاوز 12 خانة.');
             else if (!ascii.test(p))
               passEl.setCustomValidity('كلمة المرور: إنجليزي وأرقام ورموز فقط — لا عربي.');
             else passEl.setCustomValidity('');
@@ -106,7 +106,14 @@
             refreshMsgs();
           });
         }
-        if (passEl) passEl.addEventListener('input', refreshMsgs);
+        if (passEl) {
+          passEl.addEventListener('input', function () {
+            if (passEl.value.length > 12) {
+              passEl.value = passEl.value.slice(0, 12);
+            }
+            refreshMsgs();
+          });
+        }
         form.addEventListener('submit', function () {
           if (userEl) userEl.value = userEl.value.trim();
           refreshMsgs();

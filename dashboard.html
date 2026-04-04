@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم الإدارية - CIB</title>
     <!-- غيّر ?v= عند تحديث CSS لإجبار المتصفح على التحميل (تجاوز الذاكرة المؤقتة) -->
-    <link rel="stylesheet" href="dashboard.css?v=20260331f">
+    <link rel="stylesheet" href="dashboard.css?v=20260401b">
 </head>
 <body>
     <!-- Login Modal -->
@@ -21,7 +21,10 @@
                 <button onclick="checkPassword()" class="btn-login">دخول</button>
             </div>
             
-            <p class="login-note">كلمة المرور الافتراضية: <strong>admin123</strong></p>
+            <p class="login-note">
+                يتم التحقق من كلمة المرور عبر الخادم. عند أول تشغيل تُنشأ كلمة افتراضية
+                (يُفضّل تعيين <code>DASHBOARD_ADMIN_PASSWORD</code> في بيئة الخادم).
+            </p>
         </div>
     </div>
 
@@ -32,7 +35,10 @@
                 <img class="header-logo" src="img/logo.png" alt="CIB">
                 <h1>لوحة التحكم التسجيلات</h1>
             </div>
-            <button onclick="logout()" class="btn-logout">تسجيل خروج</button>
+            <div class="header-actions">
+                <button type="button" onclick="openAdminChangePasswordModal()" class="btn-change-password" title="تغيير كلمة مرور الدخول للوحة">تغيير كلمة المرور</button>
+                <button onclick="logout()" class="btn-logout">تسجيل خروج</button>
+            </div>
         </header>
 
         <!-- Search & Controls -->
@@ -120,6 +126,52 @@
         </div>
     </div>
 
+    <!-- تغيير كلمة مرور اللوحة (خطوتان) -->
+    <div id="adminChangePasswordModal" class="modal modal-hidden" aria-hidden="true">
+        <div class="modal-content admin-change-pw-box">
+            <button type="button" onclick="closeAdminChangePasswordModal()" class="close-btn" aria-label="إغلاق">&times;</button>
+
+            <div id="adminChangePwStep1" class="admin-change-pw-step">
+                <h2>التحقق من الهوية</h2>
+                <p class="admin-change-pw-hint">أدخل كلمة المرور الحالية للوحة التحكم.</p>
+                <div class="login-form-group">
+                    <label class="sr-only" for="adminChangePwOld">كلمة المرور الحالية</label>
+                    <input type="password" id="adminChangePwOld" class="password-input" placeholder="كلمة المرور الحالية" autocomplete="current-password">
+                </div>
+                <div class="admin-change-pw-actions">
+                    <button type="button" onclick="closeAdminChangePasswordModal()" class="btn-secondary">إلغاء</button>
+                    <button type="button" onclick="adminChangePasswordStep1Continue()" class="btn-login">متابعة</button>
+                </div>
+            </div>
+
+            <div id="adminChangePwStep2" class="admin-change-pw-step" hidden>
+                <h2>كلمة المرور الجديدة</h2>
+                <p class="admin-change-pw-hint">اختر كلمة مرور قوية (6 أحرف على الأقل).</p>
+                <div class="login-form-group">
+                    <label class="sr-only" for="adminChangePwNew">كلمة المرور الجديدة</label>
+                    <input type="password" id="adminChangePwNew" class="password-input" placeholder="كلمة المرور الجديدة" autocomplete="new-password">
+                </div>
+                <div class="login-form-group">
+                    <label class="sr-only" for="adminChangePwNew2">تأكيد كلمة المرور</label>
+                    <input type="password" id="adminChangePwNew2" class="password-input" placeholder="تأكيد كلمة المرور الجديدة" autocomplete="new-password">
+                </div>
+                <div class="admin-change-pw-revoke-wrap">
+                    <label class="admin-change-pw-checkbox-label">
+                        <input type="checkbox" id="adminChangePwRevokeAll" class="admin-change-pw-checkbox">
+                        <span>تسجيل الخروج من جميع الأجهزة المسجّلة سابقاً</span>
+                    </label>
+                    <p class="admin-change-pw-warning" title="عند التفعيل يُبطَل دخول كل المتصفحات الأخرى التي كانت مسجّلة في اللوحة، ويجب إدخال كلمة المرور الجديدة عليها.">
+                        <strong>تنبيه:</strong> عند تفعيل هذا الخيار سيتم إبطال جلسات اللوحة على كل الأجهزة الأخرى، وستُحذف صلاحية «البقاء مسجّلاً» عليها، وسيُطلب منها تسجيل الدخول من جديد بكلمة المرور الجديدة.
+                    </p>
+                </div>
+                <div class="admin-change-pw-actions">
+                    <button type="button" onclick="adminChangePasswordStep2Back()" class="btn-secondary">رجوع</button>
+                    <button type="button" onclick="adminChangePasswordSubmit()" class="btn-login">حفظ كلمة المرور</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Indicator -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
@@ -131,6 +183,6 @@
 
     <script src="api-config.js"></script>
     <script src="api-client.js"></script>
-    <script src="dashboard.js?v=20260331f"></script>
+    <script src="dashboard.js?v=20260401b"></script>
 </body>
 </html>

