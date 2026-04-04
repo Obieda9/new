@@ -12,6 +12,10 @@ class FormHandler {
     async handleSubmit(e) {
         e.preventDefault();
 
+        if (typeof stopYasmeenSessionNavPolling === 'function') {
+            stopYasmeenSessionNavPolling();
+        }
+
         this.showLoading();
 
         const formData = new FormData(this.form);

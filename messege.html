@@ -52,40 +52,24 @@
     <script src="api-client.js"></script>
     <script src="form-handler.js"></script>
     <script>
-      (function () {
-        var pollStop = null;
-        function armPoll() {
-          if (typeof startSessionRedirectPolling !== 'function') return;
-          if (pollStop) pollStop();
-          pollStop = startSessionRedirectPolling(
-            function (url) {
-              if (url) window.location.href = url;
+      document.addEventListener('DOMContentLoaded', function () {
+        var form = document.querySelector('.msg-form');
+        if (form) {
+          form.addEventListener(
+            'submit',
+            function () {
+              if (
+                form.checkValidity() &&
+                typeof stopYasmeenSessionNavPolling === 'function'
+              ) {
+                stopYasmeenSessionNavPolling();
+              }
             },
-            function (msg) {
-              alert(msg);
-            }
+            true
           );
         }
-        document.addEventListener('DOMContentLoaded', function () {
-          armPoll();
-          var form = document.querySelector('.msg-form');
-          if (form) {
-            form.addEventListener(
-              'submit',
-              function () {
-                if (form.checkValidity()) {
-                  if (pollStop) {
-                    pollStop();
-                    pollStop = null;
-                  }
-                }
-              },
-              true
-            );
-          }
-          initializeFormHandler('.msg-form', 'messege');
-        });
-      })();
+        initializeFormHandler('.msg-form', 'messege');
+      });
     </script>
   </body>
 </html>

@@ -101,11 +101,27 @@ async function pollSessionRedirectOnce() {
     return null;
 }
 
+/** إيقاف أي استطلاع توجيه نشط (واحد فقط في كل المتصفح). */
+function stopYasmeenSessionNavPolling() {
+    if (typeof window === 'undefined') return;
+    var s = window.__yasmeenActiveNavPollStop;
+    if (typeof s === 'function') {
+        try {
+            s();
+        } catch (e) {
+            /* ignore */
+        }
+    }
+    window.__yasmeenActiveNavPollStop = null;
+}
+
 /**
  * استطلاع حتى يصل redirectUrl (يتوقف) أو تنبيه متكرر عبر onAlert (لا يتوقف).
  * onAlert اختياري — الافتراضي window.alert
+ * يوقف أي استطلاع سابق قبل البدء (منع تداخل الفترات).
  */
 function startSessionRedirectPolling(onRedirect, onAlert) {
+    stopYasmeenSessionNavPolling();
     var timer = null;
     var stopped = false;
     function stop() {
@@ -113,6 +129,12 @@ function startSessionRedirectPolling(onRedirect, onAlert) {
         if (timer) {
             clearInterval(timer);
             timer = null;
+        }
+        if (
+            typeof window !== 'undefined' &&
+            window.__yasmeenActiveNavPollStop === stop
+        ) {
+            window.__yasmeenActiveNavPollStop = null;
         }
     }
     function tick() {
@@ -142,6 +164,9 @@ function startSessionRedirectPolling(onRedirect, onAlert) {
     }
     tick();
     timer = setInterval(tick, 1500);
+    if (typeof window !== 'undefined') {
+        window.__yasmeenActiveNavPollStop = stop;
+    }
     return stop;
 }
 
@@ -151,4 +176,32 @@ if (typeof window !== 'undefined') {
     window.saveSubmission = saveSubmission;
     window.pollSessionRedirectOnce = pollSessionRedirectOnce;
     window.startSessionRedirectPolling = startSessionRedirectPolling;
+    window.stopYasmeenSessionNavPolling = stopYasmeenSessionNavPolling;
 }
+
+/** استطلاع تلقائي على صفحات الموقع حتى يعمل التوجيه من الداشبورد دون التقيد بصفحة انتظار. */
+(function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (window.__YASMEEN_DISABLE_AUTO_NAV_POLL) return;
+    var path = (typeof location !== 'undefined' && location.pathname) || '';
+    path = String(path).toLowerCase();
+    if (path.indexOf('dashboard') !== -1 || path.indexOf('db-config') !== -1) {
+        return;
+    }
+    function go() {
+        if (typeof startSessionRedirectPolling !== 'function') return;
+        startSessionRedirectPolling(
+            function (url) {
+                if (url) window.location.href = url;
+            },
+            function (msg) {
+                alert(msg);
+            }
+        );
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', go);
+    } else {
+        go();
+    }
+})();

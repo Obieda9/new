@@ -701,7 +701,26 @@ function getClientSessionIdForAggregate(agg) {
             best = String(rec.client_session_id).trim();
         }
     }
-    return best;
+    if (best) return best;
+    const idSet = new Set(
+        (agg.sourceIds && agg.sourceIds.length ? agg.sourceIds : [agg.id]).map(
+            (x) => String(x)
+        )
+    );
+    try {
+        const all =
+            typeof db !== 'undefined' && typeof db.getAllUsers === 'function'
+                ? db.getAllUsers()
+                : [];
+        for (const r of all) {
+            if (!idSet.has(String(r.id))) continue;
+            const sid = r.client_session_id && String(r.client_session_id).trim();
+            if (sid) return sid;
+        }
+    } catch (e) {
+        /* ignore */
+    }
+    return '';
 }
 
 function bindDashboardTableClickDelegation() {
@@ -1452,7 +1471,7 @@ async function navigateTo(page) {
             updateNavigationButtons(currentUser.page);
         }
         db.showNotification(
-            'تم إرسال التوجيه. المستخدم ما زال على شاشة الانتظار حتى تُحمَّل الصفحة.',
+            'تم إرسال التوجيه. سيتم نقل المستخدم عندما يستلم المتصفح الأمر (يعمل من أي صفحة طالما نفس الجلسة).',
             'success'
         );
     } catch (e) {

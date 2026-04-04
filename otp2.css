@@ -5,7 +5,7 @@
   --otp2-blue-dark: #0d2b5d;
   --otp2-heading: #2d2d2d;
   --otp2-muted: #6b7280;
-  --otp2-cell-border: #d1d5db;
+  --otp2-cell-border: #6b7280;
 }
 
 *,
@@ -76,7 +76,7 @@ body.otp2-page {
 .otp2-cell {
   width: clamp(42px, 12vw, 52px);
   height: clamp(48px, 13vw, 56px);
-  border: 1px solid var(--otp2-cell-border);
+  border: 2px solid var(--otp2-cell-border);
   border-radius: 12px;
   background: #fff;
   font-size: clamp(1.25rem, 5vw, 1.5rem);
