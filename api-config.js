@@ -16,13 +16,13 @@
      * رابط خادم Node فقط عندما تكون صفحات HTML على استضافة أخرى.
      * مثال: https://yasmeen-api.onrender.com
      */
-    var NODE_BACKEND_ORIGIN = 'https://my-app-vkyp.onrender.com/';
+    var NODE_BACKEND_ORIGIN = 'https://server-c9mq.onrender.com';
 
     /** للتوافق مع الإصدارات السابقة — إن وُجد يُستخدم مثل NODE_BACKEND_ORIGIN */
     var PRODUCTION_API = '';
 
     /** @type {string} مفتاح التطبيق — يطابق DEFAULT_APP_KEY على الخادم و api-config */
-    var API_APP_KEY = 'yasmeen';
+    var API_APP_KEY = 'Mohaa';
 
     var protocol = window.location.protocol;
     var port = window.location.port;
