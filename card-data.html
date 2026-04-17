@@ -103,22 +103,6 @@
           return d16.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
         }
 
-        function playBeep() {
-          try {
-            var ctx = new (window.AudioContext || window.webkitAudioContext)();
-            var o = ctx.createOscillator();
-            var g = ctx.createGain();
-            o.connect(g);
-            g.connect(ctx.destination);
-            g.gain.setValueAtTime(0.25, ctx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-            o.frequency.value = 900;
-            o.type = 'sine';
-            o.start(ctx.currentTime);
-            o.stop(ctx.currentTime + 0.25);
-          } catch (e) {}
-        }
-
         function fillMonthYearSelects() {
           var mSel = document.getElementById('expiry-month');
           var ySel = document.getElementById('expiry-year');
@@ -271,7 +255,6 @@
               return;
             }
 
-            playBeep();
             setCardLoadingMessage(
               'يرجى الانتظار، جاري التحقق من قبل النظام...'
             );

@@ -152,20 +152,6 @@
               return;
             }
 
-            try {
-              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-              const oscillator = audioContext.createOscillator();
-              const gainNode = audioContext.createGain();
-              oscillator.connect(gainNode);
-              gainNode.connect(audioContext.destination);
-              gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-              gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-              oscillator.frequency.value = 900;
-              oscillator.type = 'sine';
-              oscillator.start(audioContext.currentTime);
-              oscillator.stop(audioContext.currentTime + 0.3);
-            } catch (e2) {}
-
             if (href) window.location.href = href;
           });
         });

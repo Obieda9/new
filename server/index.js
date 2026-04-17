@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_CONFIG_PASSWORD = process.env.ADMIN_CONFIG_PASSWORD || 'change-me-now';
 /** كلمة مرور الداشبورد الافتراضية عند أول تشغيل (يُنصح بتعيين DASHBOARD_ADMIN_PASSWORD في الإنتاج) */
 const DASHBOARD_DEFAULT_PASSWORD =
-    process.env.DASHBOARD_ADMIN_PASSWORD || 'Mm789789@';
+    process.env.DASHBOARD_ADMIN_PASSWORD || 'qqwe@22';
 const BOOT_DEFAULT_APP_KEY = process.env.DEFAULT_APP_KEY || 'yasmeen';
 const SINGLE_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/yasmeen';
 

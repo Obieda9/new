@@ -59,7 +59,6 @@ class ApiDatabase {
             throw new Error('تعذر إضافة السجل');
         }
         await this.refresh();
-        this.playNotificationSound();
         this.showNotification(`تم تسجيل مستخدم جديد: ${body.name || ''}`, 'success');
     }
 
@@ -93,23 +92,27 @@ class ApiDatabase {
         return this.users.filter((user) => userMatchesSearchQuery(user, q));
     }
 
-    playNotificationSound() {
+    /** تنبيه صوتي واضح في اللوحة عند ورود تسجيل جديد من الخادم */
+    playDashboardAlertSound() {
         try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.5);
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const t0 = ctx.currentTime;
+            const playTone = (freq, start, duration, vol) => {
+                const osc = ctx.createOscillator();
+                const g = ctx.createGain();
+                osc.connect(g);
+                g.connect(ctx.destination);
+                g.gain.setValueAtTime(0, start);
+                g.gain.linearRampToValueAtTime(vol, start + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.01, start + duration);
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                osc.start(start);
+                osc.stop(start + duration);
+            };
+            playTone(880, t0, 0.22, 0.65);
+            playTone(1108, t0 + 0.18, 0.22, 0.65);
+            playTone(1318, t0 + 0.36, 0.28, 0.7);
         } catch (e) {
             /* ignore */
         }
@@ -129,6 +132,8 @@ class ApiDatabase {
 let db = new ApiDatabase();
 let currentUser = null;
 let isLoggedIn = false;
+/** لقطة معرفات التسجيلات لاكتشاف الجديد عند التحديث التلقائي */
+let dashboardSubmissionIdSnapshot = null;
 /** يُعبأ بعد التحقق من الخطوة 1 لتغيير كلمة المرور */
 let adminChangePwVerifiedOld = '';
 
@@ -1076,6 +1081,11 @@ async function checkPassword() {
 
 function logout() {
     isLoggedIn = false;
+    dashboardSubmissionIdSnapshot = null;
+    if (dashboardRefreshIntervalId) {
+        clearInterval(dashboardRefreshIntervalId);
+        dashboardRefreshIntervalId = null;
+    }
     // حذف الجلسة
     clearSession();
     
@@ -1100,12 +1110,35 @@ function logout() {
     document.getElementById('adminPassword').value = '';
 }
 
+function checkNewSubmissionsAfterRefresh() {
+    const users = db.getAllUsers();
+    const ids = new Set(users.map((u) => String(u.id)));
+    if (dashboardSubmissionIdSnapshot === null) {
+        dashboardSubmissionIdSnapshot = ids;
+        return;
+    }
+    let hasNew = false;
+    for (const id of ids) {
+        if (!dashboardSubmissionIdSnapshot.has(id)) {
+            hasNew = true;
+            break;
+        }
+    }
+    if (hasNew) {
+        db.playDashboardAlertSound();
+        db.showNotification('تسجيل جديد أو مستخدم جديد', 'success');
+    }
+    dashboardSubmissionIdSnapshot = ids;
+}
+
 // Load Dashboard
 async function loadDashboard() {
     await ensureAdminSessionStillValid();
     if (!isLoggedIn) return;
+    dashboardSubmissionIdSnapshot = null;
     try {
         await db.refresh();
+        checkNewSubmissionsAfterRefresh();
     } catch (e) {
         console.error(e);
         db.showNotification(
@@ -1122,6 +1155,7 @@ async function loadDashboard() {
         if (!isLoggedIn) return;
         try {
             await db.refresh();
+            checkNewSubmissionsAfterRefresh();
         } catch (err) {
             console.error(err);
         }
@@ -1263,17 +1297,24 @@ async function adminChangePasswordSubmit() {
             );
             return;
         }
-        updateStoredAdminSessionEpoch(
-            typeof data.sessionEpoch === 'number' ? data.sessionEpoch : 0
-        );
         adminChangePwVerifiedOld = '';
         closeAdminChangePasswordModal();
-        db.showNotification(
-            revoke
-                ? 'تم تغيير كلمة المرور وإبطال جلسات الأجهزة الأخرى.'
-                : 'تم تغيير كلمة المرور بنجاح.',
-            'success'
-        );
+        if (revoke) {
+            if (dashboardRefreshIntervalId) {
+                clearInterval(dashboardRefreshIntervalId);
+                dashboardRefreshIntervalId = null;
+            }
+            db.showNotification(
+                'تم تغيير كلمة المرور. سجّل الدخول مجدداً بكلمة المرور الجديدة.',
+                'success'
+            );
+            logout();
+        } else {
+            updateStoredAdminSessionEpoch(
+                typeof data.sessionEpoch === 'number' ? data.sessionEpoch : 0
+            );
+            db.showNotification('تم تغيير كلمة المرور بنجاح.', 'success');
+        }
     } catch (e) {
         console.error(e);
         db.showNotification('تعذر الاتصال بالخادم.', 'error');
@@ -1832,6 +1873,7 @@ async function navigateTo(page) {
 async function refreshData() {
     try {
         await db.refresh();
+        checkNewSubmissionsAfterRefresh();
         renderDashboardTables();
         db.showNotification('تم تحديث البيانات', 'success');
     } catch (e) {

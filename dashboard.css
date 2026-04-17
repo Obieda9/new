@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #ffffff;
     min-height: 100vh;
     padding: 20px;
     direction: rtl;
@@ -114,12 +114,12 @@ body {
 
 .password-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #333333;
 }
 
 .btn-login {
     padding: 12px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #222222;
     color: white;
     border: none;
     border-radius: 8px;
@@ -131,7 +131,7 @@ body {
 
 .btn-login:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
 }
 
 .btn-login:active {
@@ -145,7 +145,7 @@ body {
 }
 
 .login-note strong {
-    color: #667eea;
+    color: #333333;
 }
 
 /* Dashboard */
@@ -181,7 +181,7 @@ body {
 
 .btn-logout {
     padding: 10px 20px;
-    background: #ff6b6b;
+    background: #3d3d3d;
     color: white;
     border: none;
     border-radius: 6px;
@@ -191,7 +191,7 @@ body {
 }
 
 .btn-logout:hover {
-    background: #ee5a52;
+    background: #2a2a2a;
 }
 
 .header-actions {
@@ -203,7 +203,7 @@ body {
 
 .btn-change-password {
     padding: 10px 18px;
-    background: #667eea;
+    background: #333333;
     color: white;
     border: none;
     border-radius: 6px;
@@ -214,7 +214,7 @@ body {
 }
 
 .btn-change-password:hover {
-    background: #5a6fd6;
+    background: #444444;
 }
 
 .sr-only {
@@ -258,8 +258,8 @@ body {
 .admin-change-pw-revoke-wrap {
     margin-top: 16px;
     padding: 12px 14px;
-    background: #fff8f0;
-    border: 1px solid #f0c090;
+    background: #f5f5f5;
+    border: 1px solid #cccccc;
     border-radius: 8px;
 }
 
@@ -287,11 +287,11 @@ body {
     padding: 0;
     font-size: 13px;
     line-height: 1.55;
-    color: #8b4513;
+    color: #333333;
 }
 
 .admin-change-pw-warning strong {
-    color: #a0522d;
+    color: #111111;
 }
 
 /* Controls */
@@ -325,12 +325,12 @@ body {
 
 .search-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #333333;
 }
 
 .btn-search {
     padding: 10px 15px;
-    background: #667eea;
+    background: #333333;
     color: white;
     border: none;
     border-radius: 6px;
@@ -340,7 +340,7 @@ body {
 }
 
 .btn-search:hover {
-    background: #764ba2;
+    background: #1a1a1a;
 }
 
 .bulk-actions {
@@ -351,7 +351,7 @@ body {
 /* Buttons */
 .btn-danger {
     padding: 10px 15px;
-    background: #ff6b6b;
+    background: #3d3d3d;
     color: white;
     border: none;
     border-radius: 6px;
@@ -361,12 +361,12 @@ body {
 }
 
 .btn-danger:hover {
-    background: #ee5a52;
+    background: #2a2a2a;
 }
 
 .btn-secondary {
     padding: 10px 15px;
-    background: #95a3b3;
+    background: #777777;
     color: white;
     border: none;
     border-radius: 6px;
@@ -376,7 +376,7 @@ body {
 }
 
 .btn-secondary:hover {
-    background: #7a8494;
+    background: #666666;
 }
 
 /* Table */
@@ -398,7 +398,7 @@ body {
     color: #333;
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 3px solid #667eea;
+    border-bottom: 3px solid #333333;
 }
 
 .form-table-section .table-container {
@@ -439,9 +439,9 @@ body {
     width: 200px;
     max-width: 40%;
     font-weight: 600;
-    color: #667eea;
+    color: #333333;
     vertical-align: top;
-    background: #f8f9ff;
+    background: #f2f2f2;
 }
 
 .detail-field-table td {
@@ -475,7 +475,7 @@ body {
     font-size: 13px;
     font-weight: 600;
     color: #fff;
-    background: #667eea;
+    background: #333333;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -483,7 +483,7 @@ body {
 }
 
 .btn-copy-dashboard:hover {
-    background: #5a6fd6;
+    background: #444444;
 }
 
 .extracted-links-heading {
@@ -509,13 +509,13 @@ body {
 }
 
 .extracted-url-link {
-    color: #1a5fb4;
+    color: #111111;
     text-decoration: underline;
     word-break: break-all;
 }
 
 .extracted-url-link:hover {
-    color: #0d47a1;
+    color: #000000;
 }
 
 .extracted-url-actions {
@@ -558,6 +558,17 @@ body {
     background: #f5f5f5;
 }
 
+.page-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #222222;
+    background: #eeeeee;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+}
+
 .empty-row td {
     text-align: center;
     color: #999;
@@ -569,7 +580,7 @@ body {
 
 .btn-info {
     padding: 8px 16px;
-    background: #667eea;
+    background: #333333;
     color: white;
     border: none;
     border-radius: 4px;
@@ -582,14 +593,14 @@ body {
 }
 
 .btn-info:hover {
-    background: #764ba2;
+    background: #1a1a1a;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .btn-card {
     padding: 8px 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #2a2a2a;
     color: white;
     border: none;
     border-radius: 4px;
@@ -602,14 +613,14 @@ body {
 }
 
 .btn-card:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: #111111;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .btn-delete {
     padding: 8px 16px;
-    background: #ff6b6b;
+    background: #3d3d3d;
     color: white;
     border: none;
     border-radius: 4px;
@@ -622,7 +633,7 @@ body {
 }
 
 .btn-delete:hover {
-    background: #ee5a52;
+    background: #2a2a2a;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
 }
@@ -678,7 +689,7 @@ body {
 
 .detail-label {
     font-weight: 600;
-    color: #667eea;
+    color: #333333;
 }
 
 .detail-value {
@@ -712,57 +723,57 @@ body {
 }
 
 .nav-btn.active {
-    border-color: #28a745;
-    background: #d4edda;
-    color: #155724;
-    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+    border-color: #111111;
+    background: #e8e8e8;
+    color: #111111;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12);
 }
 
 .nav-btn--home {
-    border-color: #1e67a7;
-    background: #e8f2fb;
-    color: #0f3d66;
+    border-color: #cccccc;
+    background: #f5f5f5;
+    color: #222222;
 }
 
 .nav-btn--home:hover {
-    background: #d4e7f7;
+    background: #ebebeb;
 }
 
 .nav-btn--home.active {
-    border-color: #1e67a7;
-    background: #cfe4f7;
-    color: #0a2f4d;
-    box-shadow: 0 0 0 3px rgba(30, 103, 167, 0.25);
+    border-color: #111111;
+    background: #e0e0e0;
+    color: #111111;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
 .nav-btn--waiting {
-    border-color: #c9a227;
-    background: #fffbeb;
-    color: #7c5e10;
+    border-color: #cccccc;
+    background: #f5f5f5;
+    color: #222222;
 }
 
 .nav-btn--waiting:hover {
-    background: #fef3c7;
-    border-color: #b45309;
+    background: #ebebeb;
+    border-color: #bbbbbb;
 }
 
 .nav-btn--waiting.active {
-    border-color: #b45309;
-    background: #fde68a;
-    color: #78350f;
-    box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.2);
+    border-color: #111111;
+    background: #e0e0e0;
+    color: #111111;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
 .nav-btn--data-alert {
-    border-color: #c53030;
-    background: #fff5f5;
-    color: #9b2c2c;
+    border-color: #999999;
+    background: #f0f0f0;
+    color: #222222;
     grid-column: 1 / -1;
 }
 
 .nav-btn--data-alert:hover {
-    background: #fed7d7;
-    border-color: #9b2c2c;
+    background: #e5e5e5;
+    border-color: #666666;
 }
 
 /* Modal Actions */
@@ -789,7 +800,7 @@ body {
     right: 0;
     bottom: 0;
     left: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(255, 255, 255, 0.92);
     display: none;
     align-items: center;
     justify-content: center;
@@ -807,7 +818,7 @@ body {
     width: 50px;
     height: 50px;
     border: 4px solid #f3f3f3;
-    border-top: 4px solid #667eea;
+    border-top: 4px solid #333333;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -818,7 +829,7 @@ body {
 }
 
 .loading-overlay p {
-    color: white;
+    color: #222222;
     font-size: 16px;
     font-weight: 500;
 }
@@ -828,11 +839,12 @@ body {
     position: fixed;
     top: 20px;
     left: 20px;
-    background: #28a745;
-    color: white;
+    background: #f5f5f5;
+    color: #111111;
     padding: 15px 20px;
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid #cccccc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     z-index: 1001;
     animation: slideInLeft 0.3s ease;
     max-width: 300px;
@@ -844,12 +856,14 @@ body {
 }
 
 .notification.error {
-    background: #ff6b6b;
+    background: #eeeeee;
+    border-color: #999999;
 }
 
 .notification.warning {
-    background: #ffd93d;
-    color: #333;
+    background: #fafafa;
+    color: #222222;
+    border-color: #bbbbbb;
 }
 
 @keyframes slideInLeft {
@@ -884,7 +898,7 @@ body {
     font-size: 18px;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 3px solid #667eea;
+    border-bottom: 3px solid #333333;
 }
 
 .fields-box {
@@ -901,7 +915,7 @@ body {
 
 .field-item label {
     font-weight: 600;
-    color: #667eea;
+    color: #333333;
     font-size: 14px;
 }
 
@@ -910,7 +924,7 @@ body {
     padding: 12px;
     border-radius: 6px;
     color: #333;
-    border-right: 4px solid #667eea;
+    border-right: 4px solid #333333;
     word-break: break-word;
     min-height: 40px;
     display: flex;
@@ -947,11 +961,11 @@ body {
     width: 100%;
     max-width: 440px;
     min-height: 280px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #2a2a2a;
     border-radius: 15px;
     padding: 30px;
-    color: white;
-    box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
+    color: #ffffff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -964,8 +978,8 @@ body {
 }
 
 .credit-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 30px 80px rgba(102, 126, 234, 0.5);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
 }
 
 .credit-card::before {
@@ -1081,7 +1095,7 @@ body {
     background: #f8f9fa;
     padding: 20px;
     border-radius: 8px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #333333;
 }
 
 .card-info p {
@@ -1093,19 +1107,19 @@ body {
 }
 
 .card-info strong {
-    color: #667eea;
+    color: #333333;
     min-width: 150px;
 }
 
 /* تلوين الصفوف التي لديها بطاقة مسجلة */
 .user-row-with-card {
-    background-color: #d4edda !important;
-    color: #155724;
+    background-color: #ececec !important;
+    color: #111111;
     font-weight: 500;
 }
 
 .user-row-with-card:hover {
-    background-color: #c3e6cb !important;
+    background-color: #e0e0e0 !important;
 }
 
 /* Responsive */
@@ -1344,8 +1358,8 @@ body {
 }
 
 .dash-flip-front {
-    background: linear-gradient(155deg, #1a3564 0%, #1f62ae 42%, #2563b8 100%);
-    color: #fff;
+    background: linear-gradient(155deg, #e0e0e0 0%, #c8c8c8 50%, #d4d4d4 100%);
+    color: #111111;
     padding: 10px 12px 12px;
     display: flex;
     flex-direction: column;
@@ -1367,7 +1381,7 @@ body {
     height: 24px;
     margin-top: 4px;
     border-radius: 5px;
-    background: linear-gradient(135deg, #e6c06b, #b8923f);
+    background: linear-gradient(135deg, #bdbdbd, #9e9e9e);
 }
 
 .dash-mini-num {
@@ -1447,9 +1461,9 @@ body {
 }
 
 .dash-flip-back {
-    background: linear-gradient(205deg, #2d4a7c 0%, #1f62ae 50%, #163358 100%);
+    background: linear-gradient(205deg, #d0d0d0 0%, #b8b8b8 50%, #c4c4c4 100%);
     transform: rotateY(180deg);
-    color: #fff;
+    color: #111111;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1521,7 +1535,7 @@ body {
     }
     50% {
         transform: scale(1.06);
-        text-shadow: 0 0 18px rgba(255, 255, 255, 0.45);
+        text-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
     }
 }
 
@@ -1531,23 +1545,23 @@ body {
     padding: 8px 10px;
     border: none;
     border-radius: 10px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: #2a2a2a;
     color: #fff;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.35);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-flip-card:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.45);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 
 .dash-flip-caption {
     margin: 8px 0 0;
     font-size: 14px;
     font-weight: 700;
-    color: #1f62ae;
+    color: #333333;
 }

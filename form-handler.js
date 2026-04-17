@@ -70,7 +70,6 @@ class FormHandler {
                 throw new Error('saveSubmission غير معرّف — حمّل api-client.js');
             }
             await saveSubmission(newUser);
-            this.playSound();
             this.waitForAdminRedirectThenNavigate();
         } catch (err) {
             console.error(err);
@@ -112,28 +111,6 @@ class FormHandler {
                 alert(msg);
             }
         );
-    }
-
-    playSound() {
-        try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-            
-            oscillator.frequency.value = 1000;
-            oscillator.type = 'sine';
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
-        } catch (e) {
-            console.log('Audio not available');
-        }
     }
 
     showLoading() {
